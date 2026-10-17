@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodecLens 演示页 — 编码数据自动识别与解码</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --purple: #bc8cff;
+    --orange: #ffa657;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.7 -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 40px 24px 100px; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 32px; }
+  h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h1 .logo { color: var(--accent); }
+  .sub { color: var(--dim); font-size: 14px; margin: 0; }
+  h2 {
+    font-size: 17px; margin: 40px 0 14px; padding-left: 12px;
+    border-left: 3px solid var(--accent); line-height: 1.3;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; margin: 12px 0;
+  }
+  .card .tag {
+    display: inline-block; font: 600 11px/1 var(--mono);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--accent); background: rgba(88,166,255,.12);
+    border: 1px solid rgba(88,166,255,.3); border-radius: 5px;
+    padding: 4px 7px; margin-bottom: 10px;
+  }
+  .card .tag.p { color: var(--purple); background: rgba(188,140,255,.12); border-color: rgba(188,140,255,.3); }
+  .card .tag.g { color: var(--green); background: rgba(63,185,80,.12); border-color: rgba(63,185,80,.3); }
+  .card .tag.o { color: var(--orange); background: rgba(255,166,87,.12); border-color: rgba(255,166,87,.3); }
+  code, .code {
+    font-family: var(--mono); font-size: 13px; word-break: break-all;
+    color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; display: block; margin: 8px 0 0;
+  }
+  .inline { display: inline; padding: 2px 6px; margin: 0; border-radius: 4px; }
+  .note { color: var(--dim); font-size: 13px; margin: 10px 0 0; }
+  ol, ul { padding-left: 22px; margin: 10px 0; }
+  li { margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--dim); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  kbd {
+    font: 12px var(--mono); background: var(--panel-2);
+    border: 1px solid var(--border); border-bottom-width: 2px;
+    border-radius: 5px; padding: 2px 6px; color: var(--text);
+  }
+  .tip {
+    background: rgba(88,166,255,.07); border: 1px solid rgba(88,166,255,.25);
+    border-radius: 10px; padding: 14px 18px; margin: 16px 0;
+  }
+  .tip strong { color: var(--accent); }
+  .neg { border-left: 3px solid #6e7681; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--dim); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1><span class="logo">CodecLens</span> 演示页</h1>
+    <p class="sub">这一页故意塞满了各种编码数据。加载扩展后，它们会被自动识别并高亮 —— 鼠标悬停即可看到解码结果。</p>
+  </header>
+
+  <div class="tip">
+    <strong>怎么用：</strong>
+    <ol>
+      <li>打开 <code class="inline">chrome://extensions</code>，右上角打开「开发者模式」</li>
+      <li>点「加载已解压的扩展程序」，选择本项目的 <code class="inline">codeclens/</code> 目录</li>
+      <li>回到本页刷新一次；按 <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> 可随时开关扫描</li>
+      <li>把鼠标移到任意高亮片段上，或点击扩展图标查看全部结果</li>
+    </ol>
+  </div>
+
+  <h2>1 · Base64 家族</h2>
+
+  <div class="card">
+    <span class="tag">Base64 · 英文</span>
+    <code>VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZy4=</code>
+    <p class="note">标准 Base64，解出来是一句英文。</p>
+  </div>
+
+  <div class="card">
+    <span class="tag">Base64 · 中文 UTF-8</span>
+    <code>Q29kZWNMZW5zIOiuqeS9oOS4gOecvOeci+epv+mhtemdouS4iueahOe8lueggeaVsOaNrg==</code>
+    <p class="note">同样的 Base64，内容却是中文 —— 扩展会自动按 UTF-8 还原。</p>
+  </div>
+
+  <div class="card">
+    <span class="tag p">Base64URL</span>
+    <code>Q29kZWNMZW5zIMK3IFVSTC1zYWZlIEJhc2U2NCDlj5jkvZPmvJTnpLogwrcg5ZCrIC0g5LiOIF8g5Lik56eN5pu_5o2i5a2X56ymIMK3IDIwMjQ</code>
+    <p class="note">用 <code class="inline">-</code> 和 <code class="inline">_</code> 代替标准表的 <code class="inline">+</code> 和 <code class="inline">/</code>，并且省略尾部填充 —— 常见于 URL 参数与 JWT。这一串解出来是「CodecLens · URL-safe Base64 变体演示 · 含 - 与 _ 两种替换字符 · 2024」。</p>
+  </div>
+
+  <h2>2 · 其他进制与字母表</h2>
+
+  <table>
+    <thead><tr><th>编码</th><th>样例</th><th>明文</th></tr></thead>
+    <tbody>
+      <tr><td>Base58</td><td><code class="inline">3vQB7B6Mqc1wykiePxiSn</code></td><td>hello CodecLens</td></tr>
+      <tr><td>Base32</td><td><code class="inline">JBSWY3DPEBBW6ZDFMNGGK3TT</code></td><td>Hello CodecLens</td></tr>
+      <tr><td>Hex</td><td><code class="inline">48656c6c6f20436f6465634c656e7321</code></td><td>Hello CodecLens!</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card">
+    <span class="tag p">Base58 · 段落形式</span>
+    <p>钱包地址风格的数据常常长这样：<code class="inline">3vQB7B6Mqc1wykiePxiSn</code>，而下面这段更长一些：</p>
+    <code>3vQB7B6Mqc1wykiePxiSn3vQB7B6Mqc1wykiePxiSn</code>
+  </div>
+
+  <h2>3 · Web 编码三件套</h2>
+
+  <div class="card">
+    <span class="tag g">URL 编码</span>
+    <code>%7B%22user%22%3A%22%E5%BC%A0%E4%B8%89%22%2C%22role%22%3A%22admin%22%2C%22ts%22%3A1712345678%7D</code>
+    <p class="note">解出来是一段 JSON：<code class="inline">{"user":"张三","role":"admin","ts":1712345678}</code></p>
+  </div>
+
+  <div class="card">
+    <span class="tag g">HTML 实体</span>
+    <code>&amp;lt;div class=&amp;quot;card&amp;quot;&amp;gt;&amp;lt;span&amp;gt;Hello&amp;lt;/span&amp;gt;&amp;lt;/div&amp;gt;</code>
+    <p class="note">页面上显示的就是一串实体；解出来是真正的 HTML 标签。</p>
+  </div>
+
+  <div class="card">
+    <span class="tag g">Unicode 转义</span>
+    <code>\u4f60\u597d\uff0c\u4e16\u754c \u00b7 CodecLens</code>
+    <p class="note">JS 源码里最常见的写法，解出来是「你好，世界 · CodecLens」。</p>
+  </div>
+
+  <h2>4 · JWT</h2>
+
+  <div class="card">
+    <span class="tag o">JSON Web Token</span>
+    <code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</code>
+    <p class="note">三段式结构。CodecLens 会分别解出 header 与 payload，并把 <code class="inline">iat</code> / <code class="inline">exp</code> 转成人类可读的时间。</p>
+  </div>
+
+  <h2>5 · 压缩与嵌套</h2>
+
+  <div class="card">
+    <span class="tag o">Base64 + GZIP</span>
+    <code>H4sIAAAAAAAAE3POT0lN9knNK36/Z9aL/TOfrdv6bFr707XTn7Z2vFi0WiG9KrNA4Wlf9/M9K9/v6Xna1gsSdEosTjUzUXi+Z9rzBY2PG5oAVejc+0QAAAA=</code>
+    <p class="note">表面是 Base64，解出来却是 GZIP 的二进制头 —— 卡片里会出现「展开压缩流」按钮。</p>
+  </div>
+
+  <div class="card">
+    <span class="tag o">嵌套 Base64（2 层）</span>
+    <code>Wm14aFozdHVNM04wTTJSZllqUnpNelkwWHpGelgyWjFibjA9</code>
+    <p class="note">解开第一层还是 Base64，再解一层才得到 <code class="inline">flag{n3st3d_b4s364_1s_fun}</code>。</p>
+  </div>
+
+  <div class="card">
+    <span class="tag o">Data URI</span>
+    <code>data:text/plain;base64,ZGF0YSBVUkkg6YeM6JeP552A55qE5piO5paH</code>
+    <p class="note">data URI 的 payload 部分会被单独拎出来解码。</p>
+  </div>
+
+  <h2>6 · 干扰项（不该被误报）</h2>
+
+  <div class="card neg">
+    <p>下面这些看起来「有点像」编码，但其实都是普通文本，CodecLens 应当全部忽略：</p>
+    <ul>
+      <li>一段普通中文：这是一段完全普通的说明文字，用来验证扩展不会把它当成编码数据。</li>
+      <li>一句普通英文：The quick brown fox jumps over the lazy dog.</li>
+      <li>UUID：<code class="inline">550e8400-e29b-41d4-a716-446655440000</code></li>
+      <li>纯数字时间戳：<code class="inline">1712345678901</code></li>
+      <li>普通文件名：<code class="inline">report-2024-final-v3.docx</code></li>
+      <li>SHA-1 摘要：<code class="inline">da39a3ee5e6b4b0d3255bfef95601890afd80709</code>（解出来是二进制，不是文本）</li>
+      <li>CSS 类名串：<code class="inline">container-fluid d-flex align-items-center</code></li>
+    </ul>
+  </div>
+
+  <h2>7 · 页面上的自然位置</h2>
+
+  <div class="card">
+    <p>真实页面里，编码数据往往混在正文中间。比如后端接口返回了一个 token：<code class="inline">aGVsbG8gd29ybGQ=</code>，或者日志里出现了 <code class="inline">48656c6c6f2c20576f726c6421</code>，又或者某个链接带着参数 <code class="inline">?redirect=%E4%BD%A0%E5%A5%BD%E4%B8%96%E7%95%8C</code>。这些都应该被就地高亮，而不是要你手动复制出去。</p>
+    <p>同一个段落里还可以同时出现多种编码：Base64 的 <code class="inline">Y29kZWNsZW5z</code>、Base32 的 <code class="inline">JBSWY3DPEBBW6ZDFMNGGK3TT</code>，以及一个 JWT <code class="inline">eyJhbGciOiJIUzI1NiJ9.eyJhIjoxfQ.abc123</code>。</p>
+  </div>
+
+  <footer>
+    CodecLens v1.0.0 · 本页为本地演示文件，可随意修改内容来测试识别效果。
+  </footer>
+
+</div>
+</body>
+</html>

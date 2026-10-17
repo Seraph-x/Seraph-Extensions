@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CodecLens</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="hdr">
+    <div class="brand">
+      <span class="logo">&lt;/&gt;</span>
+      <span class="name">CodecLens</span>
+    </div>
+    <div class="hdr-actions">
+      <button id="btn-rescan" class="icon-btn" title="重新扫描当前页面">&#8635;</button>
+      <button id="btn-options" class="icon-btn" title="设置">&#9881;</button>
+      <label class="switch" title="启用 / 停用扫描">
+        <input type="checkbox" id="toggle-enabled">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </header>
+
+  <div id="stats" class="stats">
+    <span id="stat-hits">0</span> 处编码 · 扫描 <span id="stat-nodes">0</span> 个文本节点 · <span id="stat-ms">0</span> ms
+  </div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="results">页面结果</button>
+    <button class="tab" data-tab="tool">手动解码</button>
+  </nav>
+
+  <section id="panel-results" class="panel active">
+    <div class="toolbar">
+      <input id="filter" class="input" type="search" placeholder="按类型 / 内容过滤…">
+      <button id="btn-copy-all" class="mini-btn" title="复制全部结果">复制全部</button>
+    </div>
+    <div id="list" class="list"></div>
+    <div id="empty" class="empty">
+      <p>当前页面未检测到可解码的数据。</p>
+      <p class="dim">试试打开含 Base64 参数、JWT 或 API 响应的页面，或切换到「手动解码」。</p>
+    </div>
+  </section>
+
+  <section id="panel-tool" class="panel">
+    <div class="toolbar">
+      <select id="codec" class="input select">
+        <option value="auto">自动识别</option>
+        <option value="base64">Base64 解码</option>
+        <option value="base64url">Base64URL 解码</option>
+        <option value="base58">Base58 解码</option>
+        <option value="base32">Base32 解码</option>
+        <option value="hex">Hex 解码</option>
+        <option value="ascii85">Ascii85 解码</option>
+        <option value="url">URL 解码</option>
+        <option value="htmlEntity">HTML 实体解码</option>
+        <option value="unicodeEscape">Unicode 转义解码</option>
+        <option value="rot13">ROT13</option>
+        <option value="jwt">JWT 解析</option>
+        <option value="b64encode">Base64 编码</option>
+        <option value="urlencode">URL 编码</option>
+      </select>
+      <button id="btn-run" class="mini-btn primary">执行</button>
+    </div>
+    <textarea id="tool-in" class="input textarea" placeholder="粘贴要解码的内容，例如：aGVsbG8gd29ybGQ="></textarea>
+    <div class="tool-out-wrap">
+      <div class="out-head">
+        <span id="out-label">输出</span>
+        <button id="btn-copy-out" class="mini-btn">复制</button>
+      </div>
+      <pre id="tool-out" class="tool-out"></pre>
+    </div>
+    <div id="tool-chain" class="chain-list"></div>
+  </section>
+
+  <footer class="ftr">
+    <span id="footer-note" class="dim">点击结果可跳转到页面位置</span>
+  </footer>
+
+  <script src="../lib/util.js"></script>
+  <script src="../lib/codecs.js"></script>
+  <script src="../lib/detector.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

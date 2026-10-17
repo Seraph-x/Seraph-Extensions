@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CodecLens 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="page-hdr">
+      <div class="brand">
+        <span class="logo">&lt;/&gt;</span>
+        <div>
+          <h1>CodecLens</h1>
+          <p class="sub">页面编码数据自动识别与解码 · 设置</p>
+        </div>
+      </div>
+      <div class="hdr-btns">
+        <button id="btn-reset" class="btn ghost">恢复默认</button>
+        <button id="btn-save" class="btn primary">保存设置</button>
+      </div>
+    </header>
+
+    <div id="toast" class="toast">已保存</div>
+
+    <section class="card">
+      <h2>基本</h2>
+      <div class="field row-field">
+        <label for="enabled">启用扫描</label>
+        <input type="checkbox" id="enabled">
+        <span class="hint">关闭后所有页面都不再自动识别，仅保留手动解码工具。</span>
+      </div>
+
+      <div class="field">
+        <label for="mode">展示方式</label>
+        <select id="mode" class="ctl">
+          <option value="highlight">高亮标记（推荐，不改动页面 DOM）</option>
+          <option value="replace">高亮并在原文后追加解码结果</option>
+          <option value="off">仅记录，不显示任何标记</option>
+        </select>
+        <span class="hint">高亮模式使用 CSS Custom Highlight API；浏览器不支持时自动回退到 span 包裹。</span>
+      </div>
+
+      <div class="field row-field">
+        <label for="scanDynamic">监听动态内容</label>
+        <input type="checkbox" id="scanDynamic">
+        <span class="hint">页面异步加载新内容后自动重新扫描（单页应用建议开启）。</span>
+      </div>
+
+      <div class="field row-field">
+        <label for="scanShadow">扫描 Shadow DOM</label>
+        <input type="checkbox" id="scanShadow">
+        <span class="hint">进入 Web Component 的 open shadow root 内部扫描（现代网站常用），会略微增加每次扫描的耗时。</span>
+      </div>
+
+      <div class="field row-field">
+        <label for="skipCodeBlocks">跳过代码块</label>
+        <input type="checkbox" id="skipCodeBlocks">
+        <span class="hint">不扫描 &lt;pre&gt; / &lt;code&gt; 内的内容，避免对源码本身做解码。</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>识别精度</h2>
+      <div class="field">
+        <label for="minLength">候选串最小长度：<b id="minLength-val">12</b></label>
+        <input type="range" id="minLength" min="6" max="40" step="1" class="ctl range">
+        <span class="hint">越小越灵敏、误报越多；建议 10–16。</span>
+      </div>
+      <div class="field">
+        <label for="maxDepth">链式解码最大层数：<b id="maxDepth-val">4</b></label>
+        <input type="range" id="maxDepth" min="1" max="8" step="1" class="ctl range">
+        <span class="hint">Base64 嵌套、Base64→Gzip→JSON 这类多层结构会被逐层解开。</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>识别类型</h2>
+      <p class="hint" style="margin-top:0">关闭不关心的格式可以显著降低误报。</p>
+      <div id="types" class="types"></div>
+    </section>
+
+    <section class="card">
+      <h2>站点黑名单</h2>
+      <div class="field">
+        <label for="blacklist">每行一个域名，支持 <code>*</code> 通配</label>
+        <textarea id="blacklist" class="ctl textarea" placeholder="example.com&#10;*.internal.corp&#10;bank.example"></textarea>
+        <span class="hint">这些站点不会自动扫描（仍可右键手动解码）。</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>自检</h2>
+      <div class="field">
+        <label for="selftest">粘贴一段数据，验证识别效果</label>
+        <textarea id="selftest" class="ctl textarea mono" placeholder="aGVsbG8gd29ybGQ="></textarea>
+        <div class="inline">
+          <button id="btn-test" class="btn">测试</button>
+          <button id="btn-test-sample" class="btn ghost">载入示例</button>
+        </div>
+      </div>
+      <pre id="test-out" class="test-out">（尚未测试）</pre>
+    </section>
+
+    <section class="card">
+      <h2>开发者</h2>
+      <p class="hint" style="margin-top:0">改完代码不用再手动刷新页面。</p>
+
+      <div class="field row-field">
+        <label for="devWatch">自动热重载</label>
+        <input type="checkbox" id="devWatch">
+        <span class="hint">每 4 秒比对一次脚本指纹，一旦发现改动就自动重新注入到所有已打开的页面。改动 <code>src/lib</code> 与 <code>src/content</code> 下的文件即刻生效，无需刷新页面。</span>
+      </div>
+
+      <div class="field row-field">
+        <label for="autoHeal">导航自动补注入</label>
+        <input type="checkbox" id="autoHeal">
+        <span class="hint">切换到新页面、单页应用（pushState）跳转、从后退缓存恢复时，自动确认页面脚本是否还活着，没接上就补注入一次。默认开启。</span>
+      </div>
+
+      <div class="field">
+        <label>页面脚本</label>
+        <div class="inline">
+          <button id="btn-reinject" class="btn">重新注入所有页面</button>
+          <button id="btn-dev-info" class="btn ghost">查看状态</button>
+          <span class="hint">快捷键 Alt+Shift+R</span>
+        </div>
+        <span class="hint">会先卸载页面里的旧实例、再注入最新代码。页面本身不刷新，滚动位置和已填的表单内容都保留。</span>
+      </div>
+
+      <div class="field">
+        <label>扩展本体</label>
+        <div class="inline">
+          <button id="btn-reload-ext" class="btn">重载扩展</button>
+          <span class="hint">改动 background.js / manifest.json 后用这个。重载后已打开的页面会自动重新接上。</span>
+        </div>
+      </div>
+
+      <pre id="dev-out" class="test-out">（点击上方按钮查看状态）</pre>
+    </section>
+
+    <footer class="page-ftr">
+      <span class="dim">CodecLens v1.1.0 · 所有解码均在本地完成，不发送任何数据。</span>
+    </footer>
+  </div>
+
+  <script src="../lib/util.js"></script>
+  <script src="../lib/codecs.js"></script>
+  <script src="../lib/detector.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

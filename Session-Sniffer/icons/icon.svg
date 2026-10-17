@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+  <linearGradient id="bg" x1="0.15" y1="0" x2="0.85" y2="1">
+    <stop offset="0" stop-color="#DE8767"/>
+    <stop offset="1" stop-color="#BE5E3A"/>
+  </linearGradient>
+</defs>
+<rect width="128" height="128" rx="29" ry="29" fill="url(#bg)"/>
+<rect width="128" height="128" rx="29" ry="29" fill="none"
+      stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="1.536"/>
+<g stroke="#FAF9F5" fill="#FAF9F5">
+<line x1="64.00" y1="45.00" x2="64.00" y2="17.00" stroke-linecap="round" stroke-width="11.2"/>
+<line x1="77.44" y1="50.56" x2="97.23" y2="30.77" stroke-linecap="round" stroke-width="11.2"/>
+<line x1="83.00" y1="64.00" x2="111.00" y2="64.00" stroke-linecap="round" stroke-width="11.2"/>
+<line x1="77.44" y1="77.44" x2="97.23" y2="97.23" stroke-linecap="round" stroke-width="11.2"/>
+<line x1="64.00" y1="83.00" x2="64.00" y2="111.00" stroke-linecap="round" stroke-width="11.2"/>
+<line x1="50.56" y1="77.44" x2="30.77" y2="97.23" stroke-linecap="round" stroke-width="11.2"/>
+<line x1="45.00" y1="64.00" x2="17.00" y2="64.00" stroke-linecap="round" stroke-width="11.2"/>
+<line x1="50.56" y1="50.56" x2="30.77" y2="30.77" stroke-linecap="round" stroke-width="11.2"/>
+<circle cx="64" cy="64" r="14"/>
+</g>
+</svg>

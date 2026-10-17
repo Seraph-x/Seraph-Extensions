@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>货币自动换算</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div class="app">
+  <header class="hd">
+    <span class="logo"><img src="icons/icon32.png" alt="" width="20" height="20"></span>
+    <span class="tt">
+      <span class="title">货币自动换算</span>
+      <span class="sub" id="host">当前页面</span>
+    </span>
+    <label class="sw" title="当前站点开关">
+      <input type="checkbox" id="enabled"><i></i>
+    </label>
+  </header>
+
+  <main class="body">
+    <section class="card">
+      <div class="field">
+        <label for="target">目标货币</label>
+        <select id="target"></select>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label for="displayMode">显示方式</label>
+          <select id="displayMode">
+            <option value="replace">替换原文（默认）</option>
+            <option value="append">原文 + 换算</option>
+            <option value="tooltip">仅悬停提示</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="decimals">小数位</label>
+          <select id="decimals">
+            <option value="auto">自动</option>
+            <option value="0">0 位</option>
+            <option value="1">1 位</option>
+            <option value="2">2 位</option>
+            <option value="3">3 位</option>
+            <option value="4">4 位</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="symbolStyle">输出样式</label>
+        <select id="symbolStyle">
+          <option value="symbol">符号 ¥724.00</option>
+          <option value="code">代码 CNY724.00</option>
+          <option value="both">符号 + 代码 ¥724.00 CNY</option>
+        </select>
+      </div>
+    </section>
+
+    <div class="rate" id="rateBox"><span class="dot" id="dot"></span><span id="rate">正在读取汇率…</span></div>
+
+    <div class="btns">
+      <button id="rescan" class="primary">重新扫描</button>
+      <button id="undo">还原原文</button>
+      <button id="refresh" title="强制刷新汇率">刷新汇率</button>
+    </div>
+
+    <details class="adv" id="adv">
+      <summary>高级设置</summary>
+      <div class="adv-in">
+        <div class="field">
+          <label for="siteMode">生效范围</label>
+          <select id="siteMode">
+            <option value="all">所有网站都换算</option>
+            <option value="whitelist">仅白名单网站</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="blacklist">黑名单（每行一条，支持 *.example.com）</label>
+          <textarea id="blacklist" rows="3" placeholder="*.bank.com&#10;mail.google.com"></textarea>
+        </div>
+        <div class="field">
+          <label for="whitelist">白名单（每行一条，支持 *.example.com）</label>
+          <textarea id="whitelist" rows="2" placeholder="*.amazon.com&#10;news.ycombinator.com"></textarea>
+        </div>
+        <div class="field">
+          <label for="ttlHours">汇率缓存时间</label>
+          <select id="ttlHours">
+            <option value="1">1 小时</option>
+            <option value="6">6 小时</option>
+            <option value="12">12 小时</option>
+            <option value="24">24 小时</option>
+            <option value="0">每次打开都刷新</option>
+          </select>
+        </div>
+        <label class="chk"><input type="checkbox" id="highlight"> 高亮换算后的金额</label>
+        <label class="chk"><input type="checkbox" id="convertSameCurrency"> 同币种也标记</label>
+        <div class="field inline">
+          <label class="chk" for="convertBare"><input type="checkbox" id="convertBare"> 无符号数字按</label>
+          <select id="bareCurrency" class="mini"></select>
+          <span class="hint">换算</span>
+        </div>
+        <div class="btns">
+          <button id="resetDefaults">恢复默认设置</button>
+          <button id="clearCache">清空汇率缓存</button>
+          <button id="diagnose">诊断</button>
+        </div>
+        <pre class="diag" id="diag"></pre>
+      </div>
+    </details>
+  </main>
+
+  <footer class="ft"><span class="ft-dot" id="ftDot"></span><span id="stat">正在检查当前页面…</span></footer>
+</div>
+<script src="lib/core.js"></script>
+<script src="lib/defaults.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

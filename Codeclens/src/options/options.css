@@ -1,0 +1,107 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0; background: #0d1117; color: #e6edf3;
+  font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.page { max-width: 780px; margin: 0 auto; padding: 28px 20px 60px; }
+
+.page-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, #1f6feb, #8957e5);
+  color: #fff; font-weight: 700; font-size: 15px; letter-spacing: -1px;
+}
+h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
+.sub { margin: 2px 0 0; color: #8b949e; font-size: 12px; }
+.hdr-btns { display: flex; gap: 8px; }
+
+.card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 18px 20px; margin-bottom: 16px;
+}
+.card h2 {
+  margin: 0 0 14px; font-size: 14px; font-weight: 600; color: #58a6ff;
+  letter-spacing: .4px; text-transform: uppercase;
+}
+
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+.field > label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.field > label b { color: #58a6ff; }
+
+.row-field { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; }
+.row-field > label { margin-bottom: 0; }
+.row-field > .hint { grid-column: 1 / -1; }
+
+.hint { display: block; color: #6e7681; font-size: 11.5px; margin-top: 4px; }
+
+.ctl {
+  width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 7px;
+  color: #e6edf3; padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none;
+}
+.ctl:focus { border-color: #1f6feb; }
+.textarea { min-height: 96px; resize: vertical; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+.range { padding: 0; height: 26px; accent-color: #1f6feb; background: transparent; border: 0; }
+
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: #1f6feb; cursor: pointer; }
+
+.types { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.type-item {
+  display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px;
+  border: 1px solid #21262d; border-radius: 9px; background: #0d1117; cursor: pointer;
+  transition: border-color .12s;
+}
+.type-item:hover { border-color: #30363d; }
+.type-item input { margin-top: 3px; }
+.type-meta { min-width: 0; }
+.type-name { font-size: 12.5px; font-weight: 600; }
+.type-eg {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px; color: #6e7681; word-break: break-all; margin-top: 2px;
+}
+
+.inline { display: flex; gap: 8px; margin-top: 10px; }
+
+.btn {
+  background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 7px;
+  padding: 7px 14px; cursor: pointer; font-size: 13px; font-family: inherit;
+}
+.btn:hover { background: #30363d; }
+.btn.primary { background: #238636; border-color: #2ea043; color: #fff; }
+.btn.primary:hover { background: #2ea043; }
+.btn.ghost { background: transparent; }
+
+.test-out {
+  margin: 12px 0 0; background: #0d1117; border: 1px solid #21262d; border-radius: 8px;
+  padding: 12px; white-space: pre-wrap; word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px;
+  color: #c9d1d9; max-height: 320px; overflow: auto;
+}
+
+.page-ftr { text-align: center; margin-top: 24px; }
+.dim { color: #6e7681; font-size: 11.5px; }
+
+.toast {
+  position: fixed; top: 18px; left: 50%; transform: translate(-50%, -80px);
+  background: #238636; color: #fff; padding: 9px 20px; border-radius: 8px;
+  font-size: 13px; opacity: 0; transition: all .25s; pointer-events: none; z-index: 99;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+code {
+  background: #21262d; padding: 1px 5px; border-radius: 4px; font-size: 11.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #484f58; }

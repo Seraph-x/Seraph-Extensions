@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PageForge - AI-Ready Web Extractor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-wrapper">
+        <div class="logo-glow"></div>
+        <img class="logo-img" src="icons/icon-48.png" alt="PageForge Logo">
+      </div>
+      <div class="header-text">
+        <h1>PAGE<span>Forge</span></h1>
+        <p>AI-Ready Web Extractor</p>
+      </div>
+    </header>
+
+    <!-- Main Content Scroll Area -->
+    <main class="app-content">
+      <!-- Target Info Card -->
+      <section class="glass-card page-info-card">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <span class="icon">🌐</span>
+          <h2>Target Webpage</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-group">
+            <label>Title</label>
+            <div id="page-title" class="info-val truncate">Detecting active page...</div>
+          </div>
+          <div class="info-group">
+            <label>URL</label>
+            <div id="page-url" class="info-val truncate">-</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Extractor Configuration -->
+      <section class="glass-card config-card">
+        <div class="card-header">
+          <span class="icon">⚙️</span>
+          <h2>Extraction Settings</h2>
+        </div>
+        <div class="card-body">
+          <!-- Inclusion Toggles -->
+          <div class="config-section">
+            <h3>Include Resources</h3>
+            <div class="toggle-grid">
+              <label class="checkbox-container">
+                <input type="checkbox" id="inc-html" checked disabled>
+                <span class="checkmark"></span>
+                <span class="label-text">HTML Code</span>
+              </label>
+              
+              <label class="checkbox-container">
+                <input type="checkbox" id="inc-css" checked>
+                <span class="checkmark"></span>
+                <span class="label-text">Stylesheets (CSS)</span>
+              </label>
+
+              <label class="checkbox-container">
+                <input type="checkbox" id="inc-js" checked>
+                <span class="checkmark"></span>
+                <span class="label-text">Scripts (JS)</span>
+              </label>
+
+              <label class="checkbox-container">
+                <input type="checkbox" id="inc-img" checked>
+                <span class="checkmark"></span>
+                <span class="label-text">Images & Assets</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- AI Optimization Features -->
+          <div class="config-section">
+            <h3>AI Optimization</h3>
+            <div class="toggle-list">
+              <label class="checkbox-container">
+                <input type="checkbox" id="opt-clean" checked>
+                <span class="checkmark"></span>
+                <span class="label-text">Clean HTML (Strip Ads/Trackers/Comments)</span>
+              </label>
+
+              <label class="checkbox-container">
+                <input type="checkbox" id="opt-guide" checked>
+                <span class="checkmark"></span>
+                <span class="label-text">Generate AI Agent Guide (ai_instructions.md)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Custom Output Name -->
+          <div class="config-section">
+            <label for="zip-filename" class="text-label">Package Name</label>
+            <div class="input-wrapper">
+              <input type="text" id="zip-filename" placeholder="webpage_code">
+              <span class="input-suffix">.zip</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Progress and Status Pane (Revealed during extraction) -->
+      <section id="progress-card" class="glass-card progress-card hidden">
+        <div class="card-header">
+          <span class="icon spinner">⏳</span>
+          <h2 id="progress-header">Extracting Page...</h2>
+        </div>
+        <div class="card-body">
+          <div class="progress-bar-container">
+            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+          </div>
+          <div id="progress-stats" class="progress-stats">
+            <span id="progress-percent">0%</span>
+            <span id="progress-count">0 / 0 assets</span>
+          </div>
+          
+          <!-- Logging console for user feedback -->
+          <div class="terminal-log">
+            <div class="terminal-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="terminal-title">extraction.log</span>
+            </div>
+            <div id="log-console" class="log-console">
+              <!-- Logs populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer with Run CTA Button -->
+    <footer class="app-footer">
+      <button id="btn-extract" class="btn-primary">
+        <span class="btn-text">Forge Code Package</span>
+        <span class="btn-glow"></span>
+      </button>
+    </footer>
+  </div>
+
+  <!-- JavaScript Beautifier libraries -->
+  <script src="lib/beautify.js"></script>
+  <script src="lib/beautify-css.js"></script>
+  <script src="lib/beautify-html.js"></script>
+  <!-- JavaScript Zip library -->
+  <script src="lib/jszip.min.js"></script>
+  <!-- Main application script -->
+  <script src="sidepanel.js"></script>
+</body>
+</html>

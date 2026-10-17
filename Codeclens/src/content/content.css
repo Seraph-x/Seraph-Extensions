@@ -1,0 +1,59 @@
+/* CodecLens - content.css
+ * 注入到页面文档：Custom Highlight API 的高亮样式 + DOM 回退样式
+ */
+
+/* ---------- Custom Highlight API 分组配色 ---------- */
+::highlight(cl-hl-a) {
+  background-color: rgba(56, 139, 253, 0.32);
+  text-decoration: underline dotted rgba(56, 139, 253, 0.9);
+  text-underline-offset: 3px;
+}
+::highlight(cl-hl-b) {
+  background-color: rgba(163, 113, 247, 0.32);
+  text-decoration: underline dotted rgba(163, 113, 247, 0.9);
+  text-underline-offset: 3px;
+}
+::highlight(cl-hl-c) {
+  background-color: rgba(63, 185, 80, 0.30);
+  text-decoration: underline dotted rgba(63, 185, 80, 0.9);
+  text-underline-offset: 3px;
+}
+::highlight(cl-hl-d) {
+  background-color: rgba(219, 109, 40, 0.32);
+  text-decoration: underline dotted rgba(219, 109, 40, 0.9);
+  text-underline-offset: 3px;
+}
+::highlight(cl-hl-active) {
+  background-color: rgba(255, 212, 59, 0.55);
+  color: #111 !important;
+}
+
+/* ---------- DOM 回退模式 ---------- */
+.cl-fallback-mark {
+  background-color: rgba(56, 139, 253, 0.28);
+  border-bottom: 1px dotted rgba(56, 139, 253, 0.9);
+  cursor: pointer;
+  border-radius: 2px;
+}
+.cl-fallback-mark[data-cl-group="b"] {
+  background-color: rgba(163, 113, 247, 0.28);
+  border-bottom-color: rgba(163, 113, 247, 0.9);
+}
+.cl-fallback-mark[data-cl-group="c"] {
+  background-color: rgba(63, 185, 80, 0.26);
+  border-bottom-color: rgba(63, 185, 80, 0.9);
+}
+.cl-fallback-mark[data-cl-group="d"] {
+  background-color: rgba(219, 109, 40, 0.28);
+  border-bottom-color: rgba(219, 109, 40, 0.9);
+}
+.cl-fallback-mark.cl-active {
+  background-color: rgba(255, 212, 59, 0.55);
+}
+
+/* ---------- 替换模式的内联展示 ---------- */
+.cl-replaced {
+  background-color: rgba(63, 185, 80, 0.14);
+  border-radius: 3px;
+  padding: 0 2px;
+}

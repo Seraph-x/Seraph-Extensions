@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Session Sniffer</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1><img class="mark" src="icons/mark.svg" width="14" height="14" alt="">Session Sniffer</h1>
+      <div id="origin" class="muted">读取中…</div>
+    </div>
+    <button id="theme" type="button" title="主题：跟随系统" aria-label="切换主题">◐</button>
+  </header>
+
+  <div class="toolbar">
+    <button id="refresh">刷新</button>
+    <button id="copy">复制 JSON</button>
+    <button id="copyheader">复制 Cookie 头</button>
+    <button id="copynetscape">复制 Netscape</button>
+    <button id="export">导出 JSON</button>
+    <button id="scanall">全库扫描</button>
+    <button id="save">存快照</button>
+  </div>
+
+  <div class="filterbar ctx">
+    <input id="targeturl" placeholder="目标 URL（留空 = 当前标签页）" />
+    <input id="topsite" placeholder="顶层站点（留空 = 当前页 origin）" />
+    <select id="method">
+      <option>GET</option><option>HEAD</option><option>POST</option>
+      <option>PUT</option><option>DELETE</option><option>PATCH</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="topnav" checked /> 顶层导航</label>
+  </div>
+
+  <div class="filterbar">
+    <input id="filter" placeholder="过滤 cookie（名/域/值 子串）…" />
+    <label class="chk"><input type="checkbox" id="onlypartition" /> 只看 Partitioned</label>
+    <label class="chk"><input type="checkbox" id="onlysent" checked /> 只发本页可见</label>
+    <select id="sortmode" title="排序规则">
+      <option value="rfc">排序: 发送顺序</option>
+      <option value="name">排序: 域名+名称</option>
+      <option value="raw">排序: 原始</option>
+    </select>
+  </div>
+
+  <nav class="tabs">
+    <button data-tab="cookies" class="active">Cookies <span id="c-count" class="badge">0</span></button>
+    <button data-tab="local">localStorage <span id="l-count" class="badge">0</span></button>
+    <button data-tab="session">sessionStorage <span id="s-count" class="badge">0</span></button>
+    <button data-tab="raw">原始</button>
+  </nav>
+
+  <main>
+    <section id="pane-cookies" class="pane active">
+      <table id="cookie-table">
+        <thead>
+          <tr><th>name</th><th>value</th><th>domain</th><th>flags</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="cookie-empty" class="empty">未发现 cookie</div>
+    </section>
+
+    <section id="pane-local" class="pane">
+      <table class="kv"><tbody></tbody></table>
+      <div class="empty">localStorage 为空</div>
+    </section>
+
+    <section id="pane-session" class="pane">
+      <table class="kv"><tbody></tbody></table>
+      <div class="empty">sessionStorage 为空</div>
+    </section>
+
+    <section id="pane-raw" class="pane">
+      <pre id="raw-out">—</pre>
+    </section>
+  </main>
+
+  <footer>
+    <span id="status" class="muted">就绪</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
