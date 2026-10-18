@@ -176,6 +176,7 @@
               <h3>本站出口探测</h3>
               <button id="refreshHost" class="mini">重新探测本站</button>
             </div>
+            <p id="h-probe-status" class="hint" role="status"></p>
             <dl class="kv-list">
               <div>
                 <dt>回显 IP</dt>
@@ -190,6 +191,9 @@
                 <dd id="h-src">—</dd>
               </div>
             </dl>
+            <p class="hint">
+              默认查询本站的 /cdn-cgi/trace（Cloudflare 回显接口）。相同分流不代表每个站点都提供回显；未回显时无法据此确定本站出口。
+            </p>
             <details>
               <summary>探测证据与参考信息</summary>
               <p id="h-probe" class="hint"></p>

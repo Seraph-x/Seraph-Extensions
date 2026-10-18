@@ -8,7 +8,7 @@
 | Currency Converter | 识别网页货币金额，按获取到的汇率换算并显示结果 | [使用说明](Currency-Converter/README.md) |
 | PageForge | 将当前网页 DOM 及可获取的前端资源打包为 ZIP，生成 AI 开发指南 | [使用说明](Pageforge-Extractor/README.md) |
 | Session Sniffer | 查看 Cookie、Web Storage 和页面会话数据，支持复制与导出 | [使用说明](Session-Sniffer/README.md) |
-| GeoMask | 管理与筛选身份/域名绑定，按站点配置环境，展示 ASN，支持 Worker CSP 自动兼容 | [使用说明](GeoMask/README.md) |
+| GeoMask | 管理身份与域名绑定，按站点配置环境，展示出口探测失败原因与 ASN，支持 Worker CSP 自动兼容 | [使用说明](GeoMask/README.md) |
 
 ## 安装
 

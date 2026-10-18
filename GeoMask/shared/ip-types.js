@@ -25,13 +25,13 @@ globalThis.GeoMaskIP=(()=>{
       organization:text(connection.org || data.organization || data.asn_org || data.asn_organization || data.asnOrganization || data.org)};
   }
   function describe({host='',hostProfile=null,profile=null}={}) {
-    const observed=hostProfile?.probe?.observedIp || (hostProfile?.source?.startsWith('host-') ? hostProfile.ip : null);
+    const observed=hostProfile?.probe ? hostProfile.probe.observedIp : (hostProfile?.source?.startsWith('host-') ? hostProfile.ip : null);
     const record=hostProfile || profile || {};
     const ip=observed ? normalizeIP(observed) : record.ip ? normalizeIP(record.ip) : null;
     // A global geographic fallback may describe a different IP from the echo.
     const matches=!!ip && !!record.ip && normalizeIP(record.ip)===ip;
     const data=matches ? record.ipData : null;
-    return {ip,scope:observed ? '本站探测请求' : host ? '全局参考，本站出口未确认' : '全局探测参考',observed:!!observed,
+    return {ip,scope:observed ? '本站探测请求' : hostProfile?.probe?.stale ? '历史参考，本次出口未确认' : host ? '全局参考，本站出口未确认' : '全局探测参考',observed:!!observed,
       source:matches ? data?.source || record.geoSource || '' : '',asn:data?.asn || '',organization:data?.organization || '',
       isp:matches ? record.isp || '' : '',updatedAt:matches ? record.updatedAt || null : null};
   }

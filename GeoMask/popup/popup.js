@@ -80,9 +80,10 @@ function renderSite() {
   $('e-ua-ch').textContent=view.uaCH;
   $('h-ip').textContent=hostKey ? view.siteIP : '—';$('h-loc').textContent=hostKey ? view.siteLocation : '—';
   $('h-src').textContent=view.probeSource;$('h-tz').textContent=hostProfile?.timezone || '暂无记录';
+  $('h-probe-status').textContent=view.probeOutcome.message;
   renderNetwork(GeoMaskIP.describe({host:hostKey,hostProfile,profile}));
   const probe=hostProfile?.probe;
-  $('h-probe').textContent=probe ? [probe.endpoint,probe.observedAt ? '观测时间：'+fmtTime(probe.observedAt) : '',probe.fallbackReason,...(probe.errors || []).map(error=>error.endpoint+'：'+error.message)].filter(Boolean).join('\n') : '暂无探测证据，点击重新探测本站获取。';
+  $('h-probe').textContent=probe ? [probe.attemptedAt ? '尝试时间：'+fmtTime(probe.attemptedAt) : '',probe.endpoint,probe.observedAt ? '观测时间：'+fmtTime(probe.observedAt) : '',probe.fallbackReason,...(probe.errors || []).map(error=>error.endpoint+'：'+error.message)].filter(Boolean).join('\n') : '暂无探测证据，点击重新探测本站获取。';
   $('refreshHost').disabled=!hostKey;
   renderSiteBinding(view.binding);
 }
@@ -178,8 +179,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   action('refreshHost',async()=>{
     const result=await request({type:'resolveHost',host:hostKey,force:true});if(!result.hostProfile) throw new Error('没有可用的本站探测结果');
     await request({type:'syncStartup'});await readState();render();
-    msg(GeoMaskPanel.describeSite({host:hostKey,settings,profile,hostProfile}).probeSource+'；请刷新原网页');
-    $('refresh-note').hidden=false;
+    const view=GeoMaskPanel.describeSite({host:hostKey,settings,profile,hostProfile});
+    msg(view.probeOutcome.message+(view.probeOutcome.confirmed ? ' 请刷新原网页' : ''),view.probeOutcome.confirmed);
+    if(view.probeOutcome.confirmed) $('refresh-note').hidden=false;
   });
   setupIdentityControls();setupIdentityDirectory();setupDraftControls();perform(load);
 });

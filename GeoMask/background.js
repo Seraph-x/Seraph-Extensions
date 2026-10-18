@@ -94,7 +94,7 @@ async function fetchText(url, timeout = 5000, redirect = 'follow') {
     const res = await fetch(url, {
       signal: ctrl.signal, cache: 'no-store', credentials: 'omit', redirect
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw Object.assign(new Error('HTTP ' + res.status),{status:res.status});
     return await res.text();
   } finally {
     clearTimeout(timer);
@@ -117,11 +117,16 @@ async function probeHostTrace(host) {
   const errors=[];
   for(const template of s.probeTemplates) {
     const endpoint=String(template).replaceAll('{host}',host);
+    let received=false;
     try {
       const text=await fetchText(endpoint,5000,'error');
+      received=true;
       const echo=GeoMaskProbe.parseEcho(text);
       return {...echo,endpoint,source:echo.format==='trace' ? 'host-trace' : 'host-echo',errors,observedAt:Date.now()};
-    } catch(error) {errors.push({endpoint,message:String(error.message || error)});}
+    } catch(error) {
+      const kind=received ? 'invalid-response' : error.status ? 'http' : error.name==='AbortError' ? 'timeout' : 'network';
+      errors.push({endpoint,kind,...(error.status ? {status:error.status} : {}),message:String(error.message || error)});
+    }
   }
   const error=new Error('本站回显不可用');
   error.diagnostics=errors;
@@ -375,7 +380,15 @@ async function resolveHostProfile(host, force) {
       }
     }
 
-    if (!profile) return cached ? {...cached,probe:{...probe,stale:true,fallbackReason:'刷新失败，保留旧结果'}} : null;
+    if (!profile) {
+      if (!cached) {
+        const details=probe.errors.map(error=>error.endpoint+'：'+error.message).join('；');
+        throw new Error((probe.observedIp ? '本站 IP 已回显（'+probe.observedIp+'），但归属地查询失败' : '本站回显失败')+'，且没有可用的地理配置。'+details);
+      }
+      const stale={...cached,probe:{...probe,stale:true,fallbackReason:'本次未取得地理结果，保留旧配置；旧 IP 不代表本次出口'}};
+      await updateHostProfiles(latest=>({...latest,[key]:stale}));
+      return stale;
+    }
 
     profile.probe=probe;
     profile.host = key;
