@@ -9,6 +9,7 @@
   let latest = null;
   let revision = 0;
   let key = '';
+  let workerStatus = null;
   // Remove configuration caches written by versions before 1.5. Never touch
   // other site storage, and never write new configuration into it.
   function cleanupLegacyCache() {
@@ -53,6 +54,12 @@
     // The transferred endpoint belongs only to the bridge, never the page.
     event.stopImmediatePropagation();
     port = event.ports[0];
+    port.onmessage=event=>{
+      const {type,status}=event.data || {};
+      if(type!=='workerCompatibility' || status?.mode!=='native' || status.reason!=='csp' ||
+        !Number.isInteger(status.count) || status.count<1 || !Number.isFinite(status.checkedAt)) return;
+      workerStatus={mode:'native',reason:'csp',count:status.count,checkedAt:status.checkedAt};
+    };
     window.removeEventListener('message',connect,true);
     port.start();
     if (latest) port.postMessage(latest);
@@ -60,6 +67,10 @@
   window.addEventListener('message',connect,true);
   document.addEventListener('gm:main-ready',publishToken,true);
   publishToken();
+  chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
+    if(message?.type!=='getWorkerCompatibility') return;
+    sendResponse({ok:true,status:workerStatus});
+  });
 
   async function pull() {
     const version = ++revision;

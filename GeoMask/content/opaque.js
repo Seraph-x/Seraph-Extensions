@@ -168,6 +168,7 @@ function installUAData({window,on,profile,enabled,nativeProxy}) {
     spoofIntlLocale: true,
     blockWebRTC: true,
     rtcFilter: false,
+    workerAutoFallback: true,
     jitter: true,
     accuracy: 1500,
     timezone: null,
@@ -193,6 +194,11 @@ function installUAData({window,on,profile,enabled,nativeProxy}) {
   // A one-time startup handshake transfers a private MessagePort. Public
   // window messages never carry or update configuration.
   let configPort = null;
+  let workerCompatibility = null;
+  function reportWorkerCompatibility(status) {
+    workerCompatibility=status;
+    configPort?.postMessage({type:'workerCompatibility',status});
+  }
   function connectBridge(event) {
     const token = event?.detail;
     if (!token || configPort) return;
@@ -201,6 +207,7 @@ function installUAData({window,on,profile,enabled,nativeProxy}) {
     configPort.onmessage = event => { absorb(event.data); syncFingerprint(); syncGeolocation(); syncRTC(); };
     configPort.start();
     window.postMessage({__gm:'connect',token},'*',[channel.port2]);
+    if(workerCompatibility) configPort.postMessage({type:'workerCompatibility',status:workerCompatibility});
     document.removeEventListener('gm:bridge-ready',connectBridge,true);
   }
   if (document) {
@@ -830,7 +837,7 @@ function installUAData({window,on,profile,enabled,nativeProxy}) {
   syncRTC();
 
   /* Bundled into the runtime closure; Dedicated Workers retain a config snapshot. */
-function installWorkerHooks(CFG,nativeProxy,markNative,installerSource,workerBase) {
+function installWorkerHooks(CFG,nativeProxy,markNative,installerSource,workerBase,reportStatus=()=>{}) {
   const root=globalThis;
   const NativeURL=root.URL;
   if (workerBase) {
@@ -857,20 +864,114 @@ function installWorkerHooks(CFG,nativeProxy,markNative,installerSource,workerBas
   const createURL=NativeURL.createObjectURL.bind(NativeURL);
   const revokeURL=NativeURL.revokeObjectURL.bind(NativeURL);
   const origin=new NativeURL(workerBase || root.location.href).origin;
+  const clone=root.structuredClone.bind(root);
+  const send=NativeWorker.prototype.postMessage;
+  const terminate=NativeWorker.prototype.terminate;
+  let blobDenied=false,nativeCount=0;
+  root.addEventListener('securitypolicyviolation',event=>{
+    if(event.isTrusted===true && event.disposition==='enforce' && event.effectiveDirective==='worker-src' &&
+      (event.blockedURI==='blob' || event.blockedURI?.startsWith('blob:'))) blobDenied=true;
+  });
+  function reportNative() {
+    nativeCount++;
+    const status={mode:'native',reason:'csp',count:nativeCount,checkedAt:Date.now()};
+    if(nativeCount===1) console.warn('[GeoMask] CSP 禁止 blob Worker，已自动使用原始 Worker；其内部时区、语言和指纹保持原生值。');
+    reportStatus(status);
+  }
+  function queuedMessage(args) {
+    if(!args.length) throw new TypeError('Worker.postMessage requires a message');
+    const options=args[1];
+    if(options!=null && !['object','function'].includes(typeof options)) throw new TypeError('Invalid Worker.postMessage options');
+    let transfer=[];
+    if(options!=null) {
+      const method=options[Symbol.iterator];
+      if(method!=null) transfer=transferList(options,method);
+      else {
+        const value=options.transfer;
+        if(value!==undefined) transfer=transferList(value,value?.[Symbol.iterator]);
+      }
+    }
+    // Clone the transfer list alongside the payload, including transferred
+    // objects not reachable from the payload. Detach at the original call.
+    return clone({message:args[0],transfer},{transfer});
+  }
+  function transferList(value,method) {
+    if(value==null || typeof method!=='function') throw new TypeError('Worker transfer must be an iterable list');
+    return Array.from({[Symbol.iterator]:()=>Reflect.apply(method,value,[])});
+  }
+  function constructorOptions(value) {
+    if(value!=null && !['object','function'].includes(typeof value)) throw new TypeError('Invalid Worker options');
+    return Object.fromEntries(['credentials','name','type'].map(key=>{
+      const member=value?.[key];return [key,member===undefined ? undefined : `${member}`];
+    }));
+  }
+  function relayEvent(event) {
+    if(event.type==='error') return new ErrorEvent('error',{message:event.message,filename:event.filename,
+      lineno:event.lineno,colno:event.colno,error:event.error,cancelable:true});
+    return new MessageEvent(event.type,{data:event.data,origin:event.origin,lastEventId:event.lastEventId,ports:event.ports});
+  }
+  function manageStartup(worker,{target,newTarget,absolute,options,token,cleanup}) {
+    let current=worker,pending=true,stopped=false;
+    const queue=[];
+    const flush=()=>{for(const item of queue) send.call(current,item.message,item.transfer);queue.length=0;};
+    Object.defineProperties(worker,{
+      postMessage:{configurable:true,writable:true,value:markNative(function postMessage(...args){
+        if(this!==worker) return Reflect.apply(send,this,args);
+        if(pending && !stopped) queue.push(queuedMessage(args));
+        else return Reflect.apply(send,current,args);
+      },'postMessage')},
+      terminate:{configurable:true,writable:true,value:markNative(function terminateWorker(){
+        if(this!==worker) return Reflect.apply(terminate,this,[]);
+        stopped=true;pending=false;queue.length=0;cleanup();return terminate.call(current);
+      },'terminate')}
+    });
+    worker.addEventListener('message',event=>{
+      if(event.data?.__gmWorkerReady!==token) return;
+      event.stopImmediatePropagation();
+      if(stopped || !pending) return;
+      pending=false;flush();
+    });
+    worker.addEventListener('error',event=>{
+      if(event.isTrusted!==true) return;
+      cleanup();
+      if(!pending || stopped) return;
+      if(!blobDenied) {pending=false;queue.length=0;return;}
+      event.preventDefault();event.stopImmediatePropagation();
+      setTimeout(()=>{
+        if(stopped || !pending) return;
+        pending=false;
+        terminate.call(worker);
+        try {current=Reflect.construct(target,[absolute.href,options],newTarget);}
+        catch(error) {
+          queue.length=0;
+          if(worker.dispatchEvent(new ErrorEvent('error',{message:error.message,error,cancelable:true}))) console.error('[GeoMask] 原生 Worker 创建失败:',error);
+          return;
+        }
+        for(const type of ['message','messageerror','error']) current.addEventListener(type,event=>{
+          if(!worker.dispatchEvent(relayEvent(event))) event.preventDefault();
+        });
+        reportNative();flush();
+      },0);
+    });
+    return worker;
+  }
   const WorkerProxy=new Proxy(NativeWorker,{
     construct(target,args,newTarget) {
       if (!CFG.enabled || !args.length) return Reflect.construct(target,args,newTarget);
-      const [url,options]=args;
+      const [url,rawOptions]=args;
       const base=workerBase || root.document?.baseURI || root.location.href;
       const absolute=new NativeURL(`${url}`,base);
       if (!['http:','https:'].includes(absolute.protocol) || absolute.origin!==origin) return Reflect.construct(target,args,newTarget);
-      const prelude='('+installerSource()+')('+JSON.stringify(CFG)+','+JSON.stringify(absolute.href)+');\n';
+      const options=constructorOptions(rawOptions);
+      const automatic=CFG.workerAutoFallback!==false;
+      if(automatic && blobDenied) {const worker=Reflect.construct(target,[absolute.href,options],newTarget);reportNative();return worker;}
+      const token=automatic ? Array.from(root.crypto.getRandomValues(new Uint8Array(16)),byte=>byte.toString(16).padStart(2,'0')).join('') : null;
+      const prelude='('+installerSource()+')('+JSON.stringify(CFG)+','+JSON.stringify(absolute.href)+');\n'+
+        (automatic ? 'postMessage('+JSON.stringify({__gmWorkerReady:token})+');\n' : '');
       const entry=JSON.stringify(absolute.href);
       const urls=[];
       let code;
       if (options?.type==='module') {
-        // Static dependency order configures the realm before the original
-        // module graph evaluates, without opening a dynamic-import message gap.
         const runtimeURL=createURL(new NativeBlob([prelude,'\nURL.revokeObjectURL(import.meta.url);'],{type:'application/javascript'}));
         urls.push(runtimeURL);
         code='import '+JSON.stringify(runtimeURL)+';\nimport '+entry+';';
@@ -880,18 +981,18 @@ function installWorkerHooks(CFG,nativeProxy,markNative,installerSource,workerBas
       const cleanup=()=>urls.forEach(revokeURL);
       try {
         const worker=Reflect.construct(target,[objectURL,options],newTarget);
-        worker.addEventListener('error',cleanup,{once:true});
+        if(automatic) manageStartup(worker,{target,newTarget,absolute,options,token,cleanup});
+        else worker.addEventListener('error',cleanup,{once:true});
         setTimeout(()=>revokeURL(objectURL),0);
         return worker;
       } catch(error) {cleanup();throw error;}
-
     }
   });
   markNative(WorkerProxy,'Worker');
   Object.defineProperty(root,'Worker',{value:WorkerProxy,writable:true,configurable:true});
 }
 
-  installWorkerHooks(CFG,nativeProxy,markNative,()=>_FTS.call(installGeoMask),workerBase);
+  installWorkerHooks(CFG,nativeProxy,markNative,()=>_FTS.call(installGeoMask),workerBase,reportWorkerCompatibility);
 
   /* Fingerprint hooks; bundled inside installGeoMask, never exported to window. */
 function installFingerprint(CFG,nativeProxy,markNative,PRESETS) {

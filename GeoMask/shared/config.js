@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   jitter: true,
   accuracy: 1500,
   rtcFilter: false,
+  workerAutoFallback: true,
   refreshMinutes: 30,
   hostTtlMinutes: 30,
   probeTemplates: ['https://{host}/cdn-cgi/trace'],
@@ -172,7 +173,7 @@ function effectiveConfig(globalProfile, settings, hostProfiles, host) {
   return {
     enabled:s.enabled, spoofTimezone:s.spoofTimezone, spoofGeolocation:s.spoofGeolocation,
     spoofLanguage:s.spoofLanguage, spoofIntlLocale:s.spoofIntlLocale,
-    blockWebRTC:s.blockWebRTC, rtcFilter:s.rtcFilter, jitter:s.jitter, accuracy:s.accuracy,
+    blockWebRTC:s.blockWebRTC, rtcFilter:s.rtcFilter, workerAutoFallback:s.workerAutoFallback, jitter:s.jitter, accuracy:s.accuracy,
     timezone:geo.timezone || null, locale:geo.locale || null,
     languages:languagesFor(geo.locale), lat:geo.lat ?? null, lon:geo.lon ?? null,
     country:base.country || null, city:base.city || null, ip:base.ip || null,
@@ -192,7 +193,7 @@ function validateSettings(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('设置必须是对象');
   const s = settingsWithDefaults(input);
   if (!['standard','enhanced'].includes(s.startupMode)) throw new TypeError('无效启动模式');
-  for (const key of ['enabled','spoofTimezone','spoofGeolocation','spoofLanguage','spoofIntlLocale','blockWebRTC','rewriteAcceptLanguage','jitter','rtcFilter']) {
+  for (const key of ['enabled','spoofTimezone','spoofGeolocation','spoofLanguage','spoofIntlLocale','blockWebRTC','rewriteAcceptLanguage','jitter','rtcFilter','workerAutoFallback']) {
     if (typeof s[key] !== 'boolean') throw new TypeError(key + ' 必须是布尔值');
   }
   for (const key of ['refreshMinutes','hostTtlMinutes','accuracy']) {

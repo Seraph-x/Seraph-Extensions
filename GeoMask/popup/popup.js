@@ -2,8 +2,9 @@
 const $=id=>document.getElementById(id);
 let settings=null,profile=null,hostProfile=null,hostKey='',startupStatus=null;
 let nativeInfo=null,consistencyIssues=[];
+let currentTabId=null,workerStatus=null;
 let busy=false,fpDirty=false,manualDirty=false,siteSelectionDirty=false;
-const TOGGLES=['spoofTimezone','spoofGeolocation','spoofLanguage','spoofIntlLocale','blockWebRTC','rewriteAcceptLanguage','jitter','rtcFilter'];
+const TOGGLES=['spoofTimezone','spoofGeolocation','spoofLanguage','spoofIntlLocale','blockWebRTC','rewriteAcceptLanguage','jitter','rtcFilter','workerAutoFallback'];
 async function request(message) {
   const response=await chrome.runtime.sendMessage(message);
   if(!response || response.ok===false) throw new Error(response?.error || '后台没有返回有效结果');
@@ -59,6 +60,7 @@ function renderSite() {
   $('h-host').textContent=hostKey || '当前标签页不是网页';
   $('site-config').hidden=!hostKey;
   $('site-note').textContent=hostKey ? '按已保存配置计算；未实时读取网页，不能证明站点已采集的结果。' : '请在 HTTP/S 网页中打开面板。全局设置与身份管理仍可使用。';
+  renderWorkerStatus();
   $('e-identity').textContent=view.binding.label;$('e-identity-source').textContent=view.binding.source;
   $('e-client').textContent=view.client.value;$('e-client-source').textContent=view.client.source;
   $('e-fonts').textContent=view.fonts.value;$('e-fonts-source').textContent=view.fonts.source;
@@ -99,12 +101,29 @@ function renderNetwork(result) {
   $('d-network').textContent=[result.asn,result.organization].filter(Boolean).join(' · ') || '未提供';
   $('d-time').textContent=fmtTime(result.updatedAt);
 }
+async function readWorkerStatus() {
+  if(!hostKey || currentTabId==null) {workerStatus={mode:'unavailable',reason:'当前标签页不是可查询的网页。'};return;}
+  try {
+    const response=await chrome.tabs.sendMessage(currentTabId,{type:'getWorkerCompatibility'},{frameId:0});
+    if(!response?.ok) throw new Error('页面未返回 Worker 状态，请刷新网页。');
+    workerStatus=response.status;
+  } catch(error) {workerStatus={mode:'unavailable',reason:error.message};}
+}
+function renderWorkerStatus() {
+  const switched=workerStatus?.mode==='native';
+  $('worker-status').textContent=switched ? '已因 CSP 切换原生 Worker 入口（'+workerStatus.count+' 个）' :
+    workerStatus?.mode==='unavailable' ? '当前页面状态不可用：'+workerStatus.reason : '当前页面尚未报告自动切换';
+  $('worker-note').textContent=switched ? '这些 Worker 内时区、语言和部分指纹保持原生值；页面与请求头继续按配置处理。切换入口不代表启动成功，原生错误仍会报告。此处仅显示顶层页面报告，子 frame / 子 Worker 请查看其控制台。' :
+    '只在确认 CSP 禁止 blob Worker 时切换，不会修改网站 CSP。'+(settings.workerAutoFallback ? '自动切换已开启。' : '自动切换已关闭；已有原生 Worker 不会恢复伪装，需刷新网页。');
+  $('worker-check').disabled=!hostKey;
+}
 async function currentHost() {
   const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
+  currentTabId=tab?.id ?? null;
   if(!tab?.url) return '';const url=new URL(tab.url);return /^https?:$/.test(url.protocol) ? url.hostname : '';
 }
 async function load() {
-  hostKey=await currentHost();const state=await readState();render();
+  hostKey=await currentHost();const state=await readState();await readWorkerStatus();render();
   if(state.lastError) showError(new Error(state.lastError.scope+'：'+state.lastError.message));else msg('已读取保存配置');
 }
 function showView(view) {
@@ -136,6 +155,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     });
   }
   const action=(id,fn,event='click')=>$(id).addEventListener(event,()=>perform(fn));
+  action('worker-check',async()=>{await readWorkerStatus();renderWorkerStatus();msg(workerStatus?.mode==='unavailable' ? '当前页面 Worker 状态不可用，请查看说明。' : '已读取当前页面 Worker 状态',workerStatus?.mode!=='unavailable');});
   action('enabled',()=>commitSettings({...settings,enabled:$('enabled').checked},$('enabled').checked ? '扩展已启用，请刷新网页' : '扩展已暂停，请刷新网页以统一状态'),'change');
   for(const key of TOGGLES) action(key,()=>commitSettings({...settings,[key]:$(key).checked},'全局开关已保存'),'change');
   setupDeviceControls('fp',updateFPDraft);
@@ -156,5 +176,5 @@ document.addEventListener('DOMContentLoaded',()=>{
     msg(GeoMaskPanel.describeSite({host:hostKey,settings,profile,hostProfile}).probeSource+'；请刷新原网页');
     $('refresh-note').hidden=false;
   });
-  setupIdentityControls();setupDraftControls();perform(load);
+  setupIdentityControls();setupIdentityDirectory();setupDraftControls();perform(load);
 });

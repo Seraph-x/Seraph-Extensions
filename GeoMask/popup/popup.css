@@ -540,3 +540,20 @@ input[readonly] {
   margin-left: 6px;
   font-weight: 550;
 }
+.directory-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.directory-entry {
+  border-top: 1px solid var(--border);
+  padding: 11px 0;
+  overflow-wrap: anywhere;
+}
+.directory-entry:first-child { border-top: 0; }
+.directory-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.directory-heading strong { font-size: 13px; }
+.directory-domains { font-size: 12px; margin: 6px 0; line-height: 1.7; }
+.directory-entry .btns { margin-top: 7px; }
+.delete-confirmation { border-color: var(--danger); }
+.deletion-domains { padding-left: 20px; font-size: 12px; overflow-wrap: anywhere; }

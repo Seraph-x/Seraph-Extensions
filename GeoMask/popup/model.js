@@ -7,6 +7,22 @@ globalThis.GeoMaskPanel=(()=>{
     return {id,label:id ? s.identities[id]?.label || id : '全局基础设置',exact:domain===host,
       source:domain ? (domain===host ? '本站绑定' : '继承父域 '+domain) : (id ? '默认身份' : '全局基础设置')};
   }
+  function identityUsage(s,id) {
+    if(!Object.hasOwn(s.identities,id)) throw new Error('身份不存在，请重新选择');
+    return {id,label:s.identities[id].label || id,isDefault:s.defaultIdentity===id,
+      domains:Object.entries(s.identityByDomain).filter(([,value])=>value===id).map(([domain])=>domain).sort()};
+  }
+  function withoutIdentity(s,id) {
+    identityUsage(s,id);
+    const identities={...s.identities};delete identities[id];
+    return {...s,identities,defaultIdentity:s.defaultIdentity===id ? null : s.defaultIdentity,
+      identityByDomain:Object.fromEntries(Object.entries(s.identityByDomain).filter(([,value])=>value!==id))};
+  }
+  function withoutDomainBinding(s,domain) {
+    if(!Object.hasOwn(s.identityByDomain,domain)) throw new Error('域名绑定不存在，请重新读取');
+    const identityByDomain={...s.identityByDomain};delete identityByDomain[domain];
+    return {...s,identityByDomain};
+  }
   function locationOf(p) {
     return [...new Set([p?.countryName || p?.country,p?.region,p?.city].filter(Boolean))].join(' / ') || '暂无位置数据';
   }
@@ -67,5 +83,5 @@ globalThis.GeoMaskPanel=(()=>{
       siteIP:siteIP || '本站出口未确认',
       siteLocation:siteIP && hostProfile.ip===siteIP ? locationOf(hostProfile) : '本站 IP 归属地未确定'};
   }
-  return Object.freeze({describeSite,bindingFor,locationOf,formChanged,deviceTransition,fingerprintSummary,PROFILE_NAMES});
+  return Object.freeze({describeSite,bindingFor,identityUsage,withoutIdentity,withoutDomainBinding,locationOf,formChanged,deviceTransition,fingerprintSummary,PROFILE_NAMES});
 })();

@@ -37,8 +37,9 @@ function renderSiteBinding(binding) {
 }
 function renderIdentityEditor() {
   const definition=settings.identities[identityEditorId];
+  $('id-del').disabled=!definition;
   $('id-editor').hidden=!definition;$('id-empty').hidden=!!definition;
-  if(!definition) return;
+  if(!definition) {$('id-state').textContent='未选择';$('id-state').className='badge';return;}
   const values={'id-label':definition.label || '','id-seed':definition.fp?.seed || '',
     'id-fp-mode':definition.fp?.enabled==null ? '' : definition.fp.enabled ? 'on' : 'off',
     'id-profile':definition.fp?.profile || '','id-ua-ch':definition.fp?.uaCH || '','id-geo-mode':definition.geo?.mode || 'auto',
@@ -76,7 +77,7 @@ function renderIdentities() {
   const defaultID=settings.defaultIdentity;
   $('default-identity').textContent=defaultID ? settings.identities[defaultID]?.label || defaultID : '未设置 · 使用全局基础设置';
   $('id-default-clear').disabled=!defaultID;
-  renderIdentityEditor();
+  renderIdentityEditor();renderIdentityDirectory();
 }
 function rememberIdentityDraft() {
   if(!settings.identities[identityEditorId]) return;
@@ -88,7 +89,7 @@ function rememberIdentityDraft() {
 function setupIdentityControls() {
   const action=(id,callback)=>$(id).addEventListener('click',()=>perform(callback));
   setupDeviceControls('id',()=>{});
-  $('id-current').addEventListener('change',()=>{identityEditorId=$('id-current').value;renderIdentityEditor();msg('仅切换编辑对象；本站绑定未改变，草稿会保留');});
+  $('id-current').addEventListener('change',()=>{identityEditorId=$('id-current').value;renderIdentities();msg('仅切换编辑对象；本站绑定未改变，草稿会保留');});
   for(const id of ID_FIELDS) $(id).addEventListener('input',rememberIdentityDraft);
   $('site-identity').addEventListener('change',()=>{siteSelectionDirty=true;renderSiteBinding(GeoMaskPanel.bindingFor(hostKey,settings));});
   action('site-bind',async()=>{
@@ -114,10 +115,5 @@ function setupIdentityControls() {
   action('id-default-clear',()=>commitSettings({...settings,defaultIdentity:null},'默认身份已清除，未绑定站点使用全局基础设置'));
   $('id-random-seed').addEventListener('click',()=>{$('id-seed').value=crypto.randomUUID();rememberIdentityDraft();msg('新种子仅在编辑框中，保存身份修改后应用');});
   $('id-sync').addEventListener('click',()=>{$('id-system').value='';populateDeviceProfiles('id');refreshDeviceEditor('id');rememberIdentityDraft();msg('设备档案已改为继承，保存身份修改后应用；UA-CH 独立配置仍需匹配');});
-  action('id-del',()=>{
-    const id=identityEditorId;const identities={...settings.identities};delete identities[id];
-    const removedDraft=siteSelectionDirty && $('site-identity').value===id;
-    const identityByDomain=Object.fromEntries(Object.entries(settings.identityByDomain).filter(([,value])=>value!==id));
-    return commitSettings({...settings,identities,identityByDomain,defaultIdentity:settings.defaultIdentity===id ? null : settings.defaultIdentity},'身份及其域名绑定已删除'+(removedDraft ? '；该身份的本站绑定草稿已清除' : ''),{onSaved:()=>{identityDrafts.delete(id);identityEditorId='';if(removedDraft) siteSelectionDirty=false;}});
-  });
+  $('id-del').addEventListener('click',()=>openIdentityDeletion(identityEditorId));
 }

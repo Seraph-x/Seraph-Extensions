@@ -78,6 +78,12 @@
           <p id="site-note" class="hint">
             以下按已保存配置计算；未实时读取网页，不能证明站点已采集的结果。
           </p>
+          <details class="card" id="worker-details">
+            <summary>Worker 兼容状态</summary>
+            <p id="worker-status" role="status"></p>
+            <p id="worker-note" class="hint"></p>
+            <button id="worker-check" class="mini">检查当前页面</button>
+          </details>
           <section id="site-config" class="card accent">
             <h3>本站将使用的配置</h3>
             <div class="effective-row">
@@ -217,6 +223,22 @@
             身份保存设备、种子和位置规则；不改变 IP，也不隔离 Cookie
             或登录账号。
           </p>
+          <section class="card">
+            <div class="section-heading"><h3>身份与绑定</h3><button id="id-new" class="mini">新建身份</button></div>
+            <p id="identity-directory-summary" class="hint"></p>
+            <ul id="identity-list" class="directory-list"></ul>
+          </section>
+          <section id="identity-delete-panel" class="card delete-confirmation" role="alertdialog" aria-labelledby="identity-delete-name" aria-describedby="identity-delete-impact" hidden>
+            <h3 id="identity-delete-name"></h3>
+            <p id="identity-delete-impact" class="hint"></p>
+            <ul id="identity-delete-domains" class="deletion-domains"></ul>
+            <div class="btns"><button id="identity-delete-cancel">取消</button><button id="identity-delete-confirm" class="danger">确认删除身份</button></div>
+          </section>
+          <details id="domain-bindings" class="card" open>
+            <summary>全部域名绑定 <span id="binding-count" class="badge"></span></summary>
+            <p class="hint">列出显式绑定；子域继承父域，更具体的绑定优先。默认身份不等于域名绑定，也不代表实际访问记录。</p>
+            <ul id="domain-binding-list" class="directory-list"></ul>
+          </details>
           <details id="default-identity-details" class="card">
             <summary>
               默认身份 <span id="default-identity" class="default-label"></span>
@@ -226,10 +248,10 @@
               没有任何域名绑定时才使用这里的身份；未设置时使用全局基础设置。
             </p>
           </details>
-          <section class="card">
+          <section class="card" id="identity-editor-card">
             <div class="section-heading">
               <h3>编辑身份 <span id="id-state" class="badge">已保存</span></h3>
-              <button id="id-new" class="mini">新建身份</button>
+              <button id="id-del" class="mini danger" disabled>删除此身份</button>
             </div>
             <label class="field"
               >选择要编辑的身份<select id="id-current"></select
@@ -379,7 +401,7 @@
                 <button id="id-discard">撤销此身份修改</button
                 ><button id="id-apply" class="primary">保存身份修改</button
                 ><button id="id-default">将此身份设为默认</button
-                ><button id="id-del" class="danger">删除身份</button>
+                >
               </div>
               <p id="id-impact" class="hint"></p>
             </div>
@@ -553,6 +575,8 @@
             <summary>接口与网络 · 修改即保存</summary>
 
             <p class="hint">下列开关修改后立即保存，影响所有身份。</p>
+            <label class="line"><input id="workerAutoFallback" type="checkbox" /><span>Worker 被 CSP 拦截时自动使用原生入口</span></label>
+            <p class="hint">自动切换的 Worker 不覆盖内部时区、语言和指纹；页面与请求头继续按配置处理。关闭后需刷新网页恢复严格模式。首次 CSP 拦截仍可能留在浏览器错误记录中。</p>
             <label class="line"
               ><input id="spoofTimezone" type="checkbox" /><span
                 >覆盖时区与本地日期接口</span
@@ -675,5 +699,6 @@
     <script src="device-editor.js"></script>
     <script src="drafts.js"></script>
     <script src="identities.js"></script>
+    <script src="identity-directory.js"></script>
   </body>
 </html>
