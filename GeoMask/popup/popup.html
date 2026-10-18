@@ -218,36 +218,13 @@
               <span class="eyebrow">配置管理</span>
               <h2>身份管理</h2>
             </div>
+            <button id="id-new" class="mini">新建身份</button>
           </div>
           <p class="hint">
             身份保存设备、种子和位置规则；不改变 IP，也不隔离 Cookie
             或登录账号。
           </p>
-          <section class="card">
-            <div class="section-heading"><h3>身份与绑定</h3><button id="id-new" class="mini">新建身份</button></div>
-            <p id="identity-directory-summary" class="hint"></p>
-            <ul id="identity-list" class="directory-list"></ul>
-          </section>
-          <section id="identity-delete-panel" class="card delete-confirmation" role="alertdialog" aria-labelledby="identity-delete-name" aria-describedby="identity-delete-impact" hidden>
-            <h3 id="identity-delete-name"></h3>
-            <p id="identity-delete-impact" class="hint"></p>
-            <ul id="identity-delete-domains" class="deletion-domains"></ul>
-            <div class="btns"><button id="identity-delete-cancel">取消</button><button id="identity-delete-confirm" class="danger">确认删除身份</button></div>
-          </section>
-          <details id="domain-bindings" class="card" open>
-            <summary>全部域名绑定 <span id="binding-count" class="badge"></span></summary>
-            <p class="hint">列出显式绑定；子域继承父域，更具体的绑定优先。默认身份不等于域名绑定，也不代表实际访问记录。</p>
-            <ul id="domain-binding-list" class="directory-list"></ul>
-          </details>
-          <details id="default-identity-details" class="card">
-            <summary>
-              默认身份 <span id="default-identity" class="default-label"></span>
-            </summary>
-            <button id="id-default-clear" class="mini">清除默认身份</button>
-            <p class="hint">
-              没有任何域名绑定时才使用这里的身份；未设置时使用全局基础设置。
-            </p>
-          </details>
+          <div class="identity-navigation"><span>配置与绑定分别管理</span><button id="identity-directory-jump" class="mini">查看身份与绑定</button></div>
           <section class="card" id="identity-editor-card">
             <div class="section-heading">
               <h3>编辑身份 <span id="id-state" class="badge">已保存</span></h3>
@@ -256,7 +233,7 @@
             <label class="field"
               >选择要编辑的身份<select id="id-current"></select
             ></label>
-            <p class="hint">此处选择身份仅用于编辑，不会更改本站绑定。</p>
+            <p class="hint">选择只切换编辑对象，保存不会改变已有绑定。网站绑定在“本站概览”管理。</p>
             <p id="id-empty" class="notice">新建或选择一个身份后开始编辑。</p>
             <div id="id-editor" hidden>
               <p id="id-saved-summary" class="saved-summary"></p>
@@ -397,14 +374,43 @@
                 <button id="id-sync" class="mini">设备档案改为继承全局</button>
               </details>
               <p id="id-dirty" class="draft" hidden>有未保存的修改</p>
-              <div class="btns">
-                <button id="id-discard">撤销此身份修改</button
-                ><button id="id-apply" class="primary">保存身份修改</button
-                ><button id="id-default">将此身份设为默认</button
-                >
-              </div>
               <p id="id-impact" class="hint"></p>
+              <div class="identity-savebar">
+                <div class="btns">
+                  <button id="id-discard">撤销修改</button>
+                  <button id="id-apply" class="primary">保存身份</button>
+                  <button id="id-default" title="使用此身份已保存的配置">设为默认</button>
+                </div>
+              </div>
             </div>
+          </section>
+          <details id="default-identity-details" class="card">
+            <summary>
+              默认身份 <span id="default-identity" class="default-label"></span>
+            </summary>
+            <button id="id-default-clear" class="mini">清除默认身份</button>
+            <p class="hint">
+              没有任何域名绑定时才使用这里的身份；未设置时使用全局基础设置。
+            </p>
+          </details>
+          <section id="identity-directory" aria-label="身份与域名绑定">
+          <section class="card">
+            <div class="section-heading"><h3>按身份查看</h3><button id="identity-editor-jump" class="mini">返回编辑</button></div>
+            <label class="field">筛选身份或域名<input id="identity-directory-filter" type="search" autocomplete="off" placeholder="输入身份名称或域名" /></label>
+            <p id="identity-directory-summary" class="hint"></p>
+            <ul id="identity-list" class="directory-list"></ul>
+          </section>
+          <section id="identity-delete-panel" class="card delete-confirmation" role="alertdialog" aria-labelledby="identity-delete-name" aria-describedby="identity-delete-impact" hidden>
+            <h3 id="identity-delete-name"></h3>
+            <p id="identity-delete-impact" class="hint"></p>
+            <ul id="identity-delete-domains" class="deletion-domains"></ul>
+            <div class="btns"><button id="identity-delete-cancel">取消</button><button id="identity-delete-confirm" class="danger">确认删除身份</button></div>
+          </section>
+          <details id="domain-bindings" class="card" open>
+            <summary>按域名查看 <span id="binding-count" class="badge"></span></summary>
+            <p class="hint">列出显式绑定；子域继承父域，更具体的绑定优先。默认身份不等于域名绑定，也不代表实际访问记录。</p>
+            <ul id="domain-binding-list" class="directory-list"></ul>
+          </details>
           </section>
         </div>
         <div

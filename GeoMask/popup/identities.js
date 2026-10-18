@@ -61,7 +61,8 @@ function updateIdentityDraftStatus() {
   $('id-discard').disabled=!dirty;$('id-state').textContent=dirty ? '编辑中 · 未保存' : '已保存';$('id-state').className=dirty ? 'badge pending' : 'badge';
   $('id-device-summary').hidden=!dirty;
   $('id-default').disabled=settings.defaultIdentity===identityEditorId;
-  $('id-default').textContent=settings.defaultIdentity===identityEditorId ? '此身份已是默认身份' : '将已保存的此身份设为默认';
+  $('id-default').textContent=settings.defaultIdentity===identityEditorId ? '默认身份' : '设为默认';
+  $('id-default').title='使用此身份已保存的配置；未保存的编辑不会自动应用。';
   const bound=Object.values(settings.identityByDomain).filter(id=>id===identityEditorId).length;
   $('id-impact').textContent='保存修改会影响绑定此身份的 '+bound+' 个域名及其子域'+(settings.defaultIdentity===identityEditorId ? '，以及没有域名绑定的站点。' : '。');
   $('id-inheritance').textContent=($('id-profile').value ? '设备档案：身份单独指定。' : '设备档案：继承全局。')+($('id-seed').value.trim() ? ' 种子：身份单独指定。' : ' 种子：继承全局。')+' 指纹处理开关继承全局与已保存的身份差异项。';
@@ -103,8 +104,9 @@ function setupIdentityControls() {
   });
   action('id-new',async()=>{
     const id='id-'+crypto.randomUUID();
-    const definition={label:'身份 '+(Object.keys(settings.identities).length+1),fp:{seed:crypto.randomUUID()},geo:{mode:'auto'}};
+    const definition={label:GeoMaskPanel.nextIdentityLabel(settings),fp:{seed:crypto.randomUUID()},geo:{mode:'auto'}};
     await commitSettings({...settings,identities:{...settings.identities,[id]:definition}},'身份已创建；需要使用时，请在本站概览绑定它',{onSaved:()=>{identityEditorId=id;}});
+    focusIdentityEditor(true);
   });
   action('id-apply',()=>{
     const id=identityEditorId;
@@ -115,5 +117,5 @@ function setupIdentityControls() {
   action('id-default-clear',()=>commitSettings({...settings,defaultIdentity:null},'默认身份已清除，未绑定站点使用全局基础设置'));
   $('id-random-seed').addEventListener('click',()=>{$('id-seed').value=crypto.randomUUID();rememberIdentityDraft();msg('新种子仅在编辑框中，保存身份修改后应用');});
   $('id-sync').addEventListener('click',()=>{$('id-system').value='';populateDeviceProfiles('id');refreshDeviceEditor('id');rememberIdentityDraft();msg('设备档案已改为继承，保存身份修改后应用；UA-CH 独立配置仍需匹配');});
-  $('id-del').addEventListener('click',()=>openIdentityDeletion(identityEditorId));
+  $('id-del').addEventListener('click',event=>openIdentityDeletion(identityEditorId,event.currentTarget));
 }

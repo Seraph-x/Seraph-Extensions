@@ -557,3 +557,25 @@ input[readonly] {
 .directory-entry .btns { margin-top: 7px; }
 .delete-confirmation { border-color: var(--danger); }
 .deletion-domains { padding-left: 20px; font-size: 12px; overflow-wrap: anywhere; }
+.identity-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.identity-navigation button { flex: none; }
+.identity-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 10px 0 8px;
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 -8px 12px var(--card);
+}
+.identity-savebar .btns { margin-top: 0; }
+.identity-savebar button { flex: 1; padding: 8px 7px; font-size: 12px; }

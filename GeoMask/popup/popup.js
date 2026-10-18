@@ -3,6 +3,8 @@ const $=id=>document.getElementById(id);
 let settings=null,profile=null,hostProfile=null,hostKey='',startupStatus=null;
 let nativeInfo=null,consistencyIssues=[];
 let currentTabId=null,workerStatus=null;
+let activeView='site';
+const viewScroll=new Map();
 let busy=false,fpDirty=false,manualDirty=false,siteSelectionDirty=false;
 const TOGGLES=['spoofTimezone','spoofGeolocation','spoofLanguage','spoofIntlLocale','blockWebRTC','rewriteAcceptLanguage','jitter','rtcFilter','workerAutoFallback'];
 async function request(message) {
@@ -20,6 +22,7 @@ function setBusy(value) {
   busy=value;$('controls').disabled=value || !settings;$('enabled').disabled=value || !settings;
   document.body.setAttribute('aria-busy',String(value));
   if(settings) updateDraftSummary();
+  if(!value) applyPendingIdentityFocus();
 }
 async function readState() {
   const [state,cache]=await Promise.all([request({type:'getState'}),chrome.storage.local.get('hostProfiles')]);
@@ -127,10 +130,12 @@ async function load() {
   if(state.lastError) showError(new Error(state.lastError.scope+'：'+state.lastError.message));else msg('已读取保存配置');
 }
 function showView(view) {
+  const main=document.querySelector('main');
+  viewScroll.set(activeView,main.scrollTop);activeView=view;
   for(const name of ['site','identities','settings']) {
     $('view-'+name).hidden=name!==view;$('tab-'+name).setAttribute('aria-selected',String(name===view));$('tab-'+name).tabIndex=name===view ? 0 : -1;
   }
-  document.querySelector('main').scrollTo(0,0);
+  main.scrollTo(0,viewScroll.get(view) || 0);
 }
 function collectFP() {
   return {...collectDeviceConfiguration('fp',settings.fp),enabled:$('fp-enabled').checked,seed:$('fp-seed').value.trim(),

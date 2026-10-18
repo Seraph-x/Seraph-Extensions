@@ -23,6 +23,23 @@ globalThis.GeoMaskPanel=(()=>{
     const identityByDomain={...s.identityByDomain};delete identityByDomain[domain];
     return {...s,identityByDomain};
   }
+  function directoryView(s,query='') {
+    const domains=new Map(Object.keys(s.identities).map(id=>[id,[]]));
+    const allBindings=Object.entries(s.identityByDomain).map(([domain,id])=>{
+      domains.get(id)?.push(domain);return {domain,id,label:s.identities[id]?.label || id};
+    }).sort((a,b)=>a.domain.localeCompare(b.domain));
+    const allIdentities=Object.entries(s.identities).map(([id,item])=>({id,label:item.label || id,isDefault:s.defaultIdentity===id,
+      domains:domains.get(id).sort()})).sort((a,b)=>a.label.localeCompare(b.label,'zh-CN') || a.id.localeCompare(b.id));
+    const term=query.trim().toLocaleLowerCase();
+    const matches=values=>values.some(value=>value.toLocaleLowerCase().includes(term));
+    return {identities:allIdentities.filter(item=>matches([item.id,item.label,...item.domains])),
+      bindings:allBindings.filter(item=>matches([item.domain,item.id,item.label])),identityTotal:allIdentities.length,bindingTotal:allBindings.length};
+  }
+  function nextIdentityLabel(s) {
+    const labels=new Set(Object.values(s.identities).map(item=>item.label));
+    let number=1;while(labels.has('身份 '+number)) number++;
+    return '身份 '+number;
+  }
   function locationOf(p) {
     return [...new Set([p?.countryName || p?.country,p?.region,p?.city].filter(Boolean))].join(' / ') || '暂无位置数据';
   }
@@ -83,5 +100,5 @@ globalThis.GeoMaskPanel=(()=>{
       siteIP:siteIP || '本站出口未确认',
       siteLocation:siteIP && hostProfile.ip===siteIP ? locationOf(hostProfile) : '本站 IP 归属地未确定'};
   }
-  return Object.freeze({describeSite,bindingFor,identityUsage,withoutIdentity,withoutDomainBinding,locationOf,formChanged,deviceTransition,fingerprintSummary,PROFILE_NAMES});
+  return Object.freeze({describeSite,bindingFor,identityUsage,withoutIdentity,withoutDomainBinding,directoryView,nextIdentityLabel,locationOf,formChanged,deviceTransition,fingerprintSummary,PROFILE_NAMES});
 })();
