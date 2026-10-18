@@ -70,10 +70,10 @@ function updateManualDraft() {
 function updateDraftSummary() {
   const settingsCount=Number(fpDirty)+Number(manualDirty);
   const identityCount=identityDrafts.size;
-  for(const [id,count] of [['pending-settings',settingsCount],['pending-identities',identityCount],['pending-site',Number(siteSelectionDirty)]]) {
+  for(const [id,count] of [['pending-settings',settingsCount],['pending-identities',identityCount],['pending-site',Number(siteSelectionDirty)+workerDrafts.size]]) {
     $(id).hidden=!count;$(id).textContent=String(count);
   }
-  const groups=[fpDirty && '设备设置',manualDirty && '全局位置',identityCount && identityCount+' 个身份',siteSelectionDirty && '本站绑定'].filter(Boolean);
+  const groups=[fpDirty && '设备设置',manualDirty && '全局位置',identityCount && identityCount+' 个身份',siteSelectionDirty && '本站绑定',workerDrafts.size && workerDrafts.size+' 个站点 Worker'].filter(Boolean);
   $('pending-summary').hidden=!groups.length;
   $('pending-text').textContent=groups.length ? '未保存：'+groups.join('、') : '';
   $('jump-drafts').disabled=busy;
@@ -93,6 +93,11 @@ function setupDraftControls() {
       showView('settings');$(fpDirty ? 'fp-card' : 'manual-card').scrollIntoView({block:'start'});
     }
     else if(identityDrafts.size) {identityEditorId=identityDrafts.has(identityEditorId) ? identityEditorId : identityDrafts.keys().next().value;renderIdentities();showView('identities');$('id-editor').scrollIntoView({block:'start'});}
+    else if(workerDrafts.size) {
+      showView('site');$('worker-details').open=true;$('worker-details').scrollIntoView({block:'start'});
+      if(workerDrafts.has(hostKey)) $('worker-mode').focus();
+      else msg('其他站点仍有 Worker 草稿：'+[...workerDrafts.keys()].join('、'),'warning');
+    }
     else if(siteSelectionDirty) {showView('site');$('site-binding').scrollIntoView({block:'start'});}
   });
 }

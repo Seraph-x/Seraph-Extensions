@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   accuracy: 1500,
   rtcFilter: false,
   workerAutoFallback: true,
+  workerModeByDomain: {},
   refreshMinutes: 30,
   hostTtlMinutes: 30,
   probeTemplates: ['https://{host}/cdn-cgi/trace'],
@@ -206,7 +207,8 @@ function effectiveConfig(globalProfile, settings, hostProfiles, host) {
   return {
     enabled:s.enabled, spoofTimezone:s.spoofTimezone, spoofGeolocation:s.spoofGeolocation,
     spoofLanguage:s.spoofLanguage, spoofIntlLocale:s.spoofIntlLocale,
-    blockWebRTC:s.blockWebRTC, rtcFilter:s.rtcFilter, workerAutoFallback:s.workerAutoFallback, jitter:s.jitter, accuracy:s.accuracy,
+    blockWebRTC:s.blockWebRTC, rtcFilter:s.rtcFilter, workerAutoFallback:s.workerAutoFallback,
+    workerMode:s.workerModeByDomain[host] || 'auto', jitter:s.jitter, accuracy:s.accuracy,
     timezone:geo.timezone || null, locale:geo.locale || null,
     languages:languagesFor(geo.locale), lat:geo.lat ?? null, lon:geo.lon ?? null,
     country:base.country || null, city:base.city || null, ip:base.ip || null,
@@ -246,6 +248,10 @@ function validateSettings(input) {
   const record = (value, name) => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(name + ' 必须是对象');
   };
+  record(s.workerModeByDomain,'Worker 站点模式');
+  for(const [host,mode] of Object.entries(s.workerModeByDomain)) {
+    if(normalizeHost(host)!==host || !['auto','native'].includes(mode)) throw new TypeError('无效 Worker 站点模式：'+host);
+  }
   validateGeo(s.manual); validateFp(s.fp);
   record(s.manualByPriority,'独立位置配置');
   for(const [priority,manual] of Object.entries(s.manualByPriority)) {

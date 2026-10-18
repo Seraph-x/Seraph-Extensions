@@ -10,6 +10,9 @@
   let revision = 0;
   let key = '';
   let workerStatus = null;
+  let appliedRevision = 0;
+  let runtimeVersion = null;
+  let configurationError = null;
   // Remove configuration caches written by versions before 1.5. Never touch
   // other site storage, and never write new configuration into it.
   function cleanupLegacyCache() {
@@ -56,9 +59,18 @@
     port = event.ports[0];
     port.onmessage=event=>{
       const {type,status}=event.data || {};
-      if(type!=='workerCompatibility' || status?.mode!=='native' || status.reason!=='csp' ||
+      if(type==='configurationApplied' || type==='configurationError') {
+        if(!Number.isInteger(event.data.revision) || event.data.revision!==revision) return;
+        if(type==='configurationApplied' && typeof event.data.runtimeVersion==='string') {
+          appliedRevision=revision;runtimeVersion=event.data.runtimeVersion;configurationError=null;
+        } else if(type==='configurationError' && typeof event.data.error==='string') {
+          appliedRevision=0;configurationError=event.data.error;
+        }
+        return;
+      }
+      if(type!=='workerCompatibility' || status?.mode!=='native' || !['csp','site-setting'].includes(status.reason) ||
         !Number.isInteger(status.count) || status.count<1 || !Number.isFinite(status.checkedAt)) return;
-      workerStatus={mode:'native',reason:'csp',count:status.count,checkedAt:status.checkedAt};
+      workerStatus={mode:'native',reason:status.reason,count:status.count,checkedAt:status.checkedAt};
     };
     window.removeEventListener('message',connect,true);
     port.start();
@@ -68,6 +80,11 @@
   document.addEventListener('gm:main-ready',publishToken,true);
   publishToken();
   chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
+    if(message?.type==='getPageStatus') {
+      sendResponse({ok:true,status:workerStatus,page:{connected:!!port,applied:!!latest && appliedRevision===revision,
+        runtimeVersion,extensionVersion:chrome.runtime.getManifest().version,error:configurationError}});
+      return;
+    }
     if(message?.type!=='getWorkerCompatibility') return;
     sendResponse({ok:true,status:workerStatus});
   });
@@ -77,9 +94,13 @@
     try {
       const st = await chrome.storage.local.get(['profile','settings','hostProfiles']);
       if (version !== revision) return;
-      latest = effectiveConfig(st.profile,st.settings,st.hostProfiles,key);
+      latest = {...effectiveConfig(st.profile,st.settings,st.hostProfiles,key),bridgeRevision:version};
+      configurationError=null;
       port?.postMessage(latest);
-    } catch (error) { console.error('[GeoMask] 配置读取失败:',error); }
+    } catch (error) {
+      if(version===revision) configurationError=String(error.message || error);
+      console.error('[GeoMask] 配置读取失败:',error);
+    }
   }
   pull();
   if (key) {

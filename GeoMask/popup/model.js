@@ -62,14 +62,35 @@ globalThis.GeoMaskPanel=(()=>{
     return (PROFILE_NAMES[fp.profile] || '待选择设备')+' · '+mode+browser;
   }
   function browserName(fp) {return (fp.uaCH==='custom' && fp.uaCHFields?.browser ? fp.uaCHFields.browser==='edge' : fp.profile==='win-edge') ? 'Edge' : 'Chrome';}
+  function runtimeSummary({enabled,connection,worker,workerMode,probe}) {
+    const labels={ready:'页面已连接',pending:'页面待确认',missing:'页面未连接',stale:'页面需刷新',error:'页面应用失败',restricted:'页面不支持'};
+    return {
+      page:{label:enabled ? labels[connection?.state] || '页面待读取' : '扩展已暂停',tone:!enabled ? 'neutral' : connection?.state==='ready' ? 'good' : connection?.state==='error' ? 'bad' : 'warning'},
+      worker:{label:worker?.mode==='native' ? 'Worker 原生' : workerMode==='native' ? 'Worker 原生配置' : 'Worker 自动',tone:worker?.mode==='native' || workerMode==='native' ? 'warning' : 'neutral'},
+      probe:{label:probe?.confirmed ? '出口已回显' : '出口未确认',tone:probe?.confirmed ? 'good' : 'warning'}
+    };
+  }
+  function connectionStatus({page,version,error,restricted=false}={}) {
+    if(restricted) return {state:'restricted',message:'浏览器保护页面：无法注入 GeoMask',detail:'Chrome 商店不支持页面注入和本站回显探测。全局设置仍可编辑。'};
+    if(error || !page) return {state:'missing',message:'页面未连接 GeoMask',detail:'可能是扩展更新前打开的页面、站点访问权限受限或注入失败。请刷新此页并检查。'+(error ? '\n原始错误：'+error : '')};
+    if(page.error) return {state:'error',message:'页面配置应用失败',detail:page.error};
+    if(!page.connected) return {state:'pending',message:'桥接已加载，页面运行时尚未连接',detail:'尚不能确认配置已应用；刷新后仍如此请查看页面控制台。'};
+    if(!page.applied) return {state:'pending',message:'页面已连接，等待配置应用回执',detail:'启动脚本注册成功不等于当前页面已应用配置。'};
+    if(page.runtimeVersion!==version) return {state:'stale',message:'页面仍运行旧版 GeoMask',detail:'页面版本：'+(page.runtimeVersion || '未知')+'；扩展版本：'+version+'。请刷新此页。'};
+    return {state:'ready',message:'页面已连接 · 已收到配置应用回执',detail:'仅确认顶层页面运行时的回执，不代表网站已读取的值，也不代表所有 frame / Worker 都已覆盖。'};
+  }
   function probeOutcome(hostProfile,siteIP) {
     if(siteIP) return {confirmed:true,message:hostProfile.source==='global' || hostProfile.probe?.stale
       ? '已取得回显 IP，但本次未取得归属地；地理配置见上方来源。' : '已取得本站探测请求的回显 IP；不保证其他请求使用相同出口。'};
     const errors=hostProfile?.probe?.errors || [];
     const reasons=errors.map(error=>{
+      if(error.kind==='restricted-site') return error.message;
+      if(error.kind==='redirect') return '回显地址发生重定向；未跟随其他站点';
+      if(error.kind==='network') return '网络请求失败；浏览器未提供细分原因（可能涉及 CORS、DNS、TLS 或连接失败），请查看扩展错误页';
       const status=error.status || Number(/^HTTP (\d{3})$/.exec(error.message)?.[1]);
       if(status===404) return 'HTTP 404：该路径未提供回显接口';
       if(status===401 || status===403) return 'HTTP '+status+'：回显请求被站点拒绝';
+      if(status===429) return 'HTTP 429：回显服务限制请求频率';
       if(status) return '回显请求返回 HTTP '+status;
       if(error.kind==='timeout') return '回显请求超时';
       if(error.kind==='invalid-response') return '接口响应不是有效的 IP 回显';
@@ -118,5 +139,5 @@ globalThis.GeoMaskPanel=(()=>{
       siteIP:siteIP || '本站出口未确认',
       siteLocation:siteIP && hostProfile.ip===siteIP ? locationOf(hostProfile) : '本站 IP 归属地未确定'};
   }
-  return Object.freeze({describeSite,bindingFor,identityUsage,withoutIdentity,withoutDomainBinding,directoryView,nextIdentityLabel,locationOf,formChanged,deviceTransition,fingerprintSummary,PROFILE_NAMES});
+  return Object.freeze({describeSite,connectionStatus,runtimeSummary,bindingFor,identityUsage,withoutIdentity,withoutDomainBinding,directoryView,nextIdentityLabel,locationOf,formChanged,deviceTransition,fingerprintSummary,PROFILE_NAMES});
 })();

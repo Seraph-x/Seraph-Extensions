@@ -63,6 +63,10 @@
         role="alert"
         hidden
       ></p>
+      <details id="background-history" class="notice history-notice" hidden>
+        <summary id="background-history-title">上次后台任务失败</summary>
+        <p id="background-history-detail" class="hint"></p>
+      </details>
       <p id="refresh-note" class="refresh-hint" hidden>
         配置已保存 · 刷新网页后统一应用
       </p>
@@ -78,14 +82,23 @@
           <p id="site-note" class="hint">
             以下按已保存配置计算；未实时读取网页，不能证明站点已采集的结果。
           </p>
-          <details class="card" id="worker-details">
-            <summary>Worker 兼容状态</summary>
-            <p id="worker-status" role="status"></p>
-            <p id="worker-note" class="hint"></p>
-            <button id="worker-check" class="mini">检查当前页面</button>
-          </details>
+          <section class="card compact-status" id="page-connection" aria-label="当前页面状态">
+            <div class="section-heading">
+              <p id="page-status"></p>
+              <button id="worker-check" class="mini">检查状态</button>
+            </div>
+            <div class="state-strip" aria-label="状态摘要">
+              <span id="runtime-page" class="state-chip">页面待读取</span>
+              <span id="runtime-worker" class="state-chip">Worker 待读取</span>
+              <span id="runtime-probe" class="state-chip">出口待读取</span>
+            </div>
+            <div class="status-actions">
+              <details id="page-diagnostics"><summary>连接说明</summary><p id="page-note" class="hint"></p></details>
+              <button id="page-reload" class="mini">刷新此页并检查</button>
+            </div>
+          </section>
           <section id="site-config" class="card accent">
-            <h3>本站将使用的配置</h3>
+            <h3>本站配置 <small class="section-caption">按保存值计算</small></h3>
             <div class="effective-row">
               <span>身份</span>
               <div>
@@ -112,6 +125,8 @@
                 <small id="e-geolocation-note">—</small>
               </div>
             </div>
+            <details id="site-device-details">
+              <summary>设备、浏览器与指纹</summary>
             <div class="effective-row">
               <span>设备档案</span>
               <div>
@@ -136,6 +151,7 @@
                 <b id="e-fingerprint">—</b><small id="e-seed-source">—</small>
               </div>
             </div>
+            </details>
             <details>
               <summary>语言接口与请求头</summary>
               <dl class="kv-list">
@@ -158,26 +174,12 @@
               </dl>
             </details>
           </section>
-          <section id="site-binding" class="card">
-            <h3>本站身份绑定</h3>
-            <label class="field" for="site-identity"
-              >为当前域名指定身份<select id="site-identity"></select
-            ></label>
-            <p id="site-binding-source" class="hint"></p>
-            <div class="btns">
-              <button id="site-bind" class="primary">保存本站绑定</button
-              ><button id="id-unbind">解除本站绑定</button>
-            </div>
-            <p class="hint">
-              选择后点击保存。没有本站绑定时，依次继承父域绑定、默认身份、全局基础设置。
-            </p>
-          </section>
           <section class="card">
             <div class="section-heading">
-              <h3>本站出口探测</h3>
+              <h3>本站出口 <span id="probe-badge" class="badge">未确认</span></h3>
               <button id="refreshHost" class="mini">重新探测本站</button>
             </div>
-            <p id="h-probe-status" class="hint" role="status"></p>
+            <p id="h-probe-status" class="hint"></p>
             <dl class="kv-list">
               <div>
                 <dt>回显 IP</dt>
@@ -192,11 +194,9 @@
                 <dd id="h-src">—</dd>
               </div>
             </dl>
-            <p class="hint">
-              默认查询本站的 /cdn-cgi/trace（Cloudflare 回显接口）。相同分流不代表每个站点都提供回显；未回显时无法据此确定本站出口。
-            </p>
             <details>
-              <summary>探测证据与参考信息</summary>
+              <summary>失败原因、探测证据与 ASN</summary>
+              <p class="hint">默认请求本站 /cdn-cgi/trace。相同分流不代表每个站点都提供回显；备用 IP 不等于本站出口。</p>
               <p id="h-probe" class="hint"></p>
               <dl class="kv-list">
                 <div><dt>探测时区</dt><dd id="h-tz">—</dd></div>
@@ -211,6 +211,33 @@
               </p>
             </details>
           </section>
+          <section id="site-binding" class="card">
+            <h3>本站身份绑定</h3>
+            <label class="field" for="site-identity"
+              >为当前域名指定身份<select id="site-identity"></select
+            ></label>
+            <p id="site-binding-source" class="hint"></p>
+            <div class="btns">
+              <button id="site-bind" class="primary">保存本站绑定</button
+              ><button id="id-unbind">解除本站绑定</button>
+            </div>
+            <p class="hint">
+              选择后点击保存。没有本站绑定时，依次继承父域绑定、默认身份、全局基础设置。
+            </p>
+          </section>
+          <details class="card" id="worker-details">
+            <summary>Worker 设置与覆盖范围 <span id="worker-state" class="badge">已保存</span></summary>
+            <p id="worker-status"></p>
+            <p id="worker-note" class="hint"></p>
+            <label class="field">本站 Worker 处理方式
+              <select id="worker-mode">
+                <option value="auto">自动处理 · 遵循全局兼容设置</option>
+                <option value="native">直接使用原生 · 跳过 Blob 包装</option>
+              </select>
+            </label>
+            <p class="hint">仅保存当前完整域名，不影响其他站点。原生模式下 Worker 内部保留浏览器值；保存后刷新此页统一应用。</p>
+            <div class="btns"><button id="worker-save" class="primary">保存本站模式</button><button id="worker-discard">撤销修改</button></div>
+          </details>
         </div>
         <div
           id="view-identities"
@@ -712,6 +739,7 @@
     <script src="../shared/ip-types.js"></script>
     <script src="model.js"></script>
     <script src="popup.js"></script>
+    <script src="page-status.js"></script>
     <script src="device-editor.js"></script>
     <script src="drafts.js"></script>
     <script src="identities.js"></script>

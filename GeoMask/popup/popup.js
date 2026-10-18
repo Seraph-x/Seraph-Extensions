@@ -2,7 +2,7 @@
 const $=id=>document.getElementById(id);
 let settings=null,profile=null,hostProfile=null,hostKey='',startupStatus=null;
 let nativeInfo=null,consistencyIssues=[];
-let currentTabId=null,workerStatus=null;
+let currentTabId=null,workerStatus=null,pageConnection=null;
 let activeView='site';
 const viewScroll=new Map();
 let busy=false,fpDirty=false,manualDirty=false,siteSelectionDirty=false;
@@ -12,7 +12,10 @@ async function request(message) {
   if(!response || response.ok===false) throw new Error(response?.error || '后台没有返回有效结果');
   return response;
 }
-function msg(text,ok=true) { $('msg').textContent=text; $('msg').style.color=ok ? 'var(--green)' : 'var(--danger)'; }
+function msg(text,tone=true) {
+  const color=typeof tone==='boolean' ? (tone ? 'green' : 'danger') : ({success:'green',error:'danger',warning:'warning',neutral:'muted'}[tone] || 'muted');
+  $('msg').textContent=text;$('msg').style.color='var(--'+color+')';
+}
 function showError(error) {
   $('status-error').hidden=false;$('status-error').textContent=String(error.message || error);msg('操作未完成，请查看上方错误。',false);
   $('status-error').focus?.({preventScroll:true});$('status-error').scrollIntoView?.({block:'center'});
@@ -29,11 +32,12 @@ async function readState() {
   settings=GeoMaskConfig.settingsWithDefaults(state.settings);profile=state.profile;startupStatus=state.startupStatus;
   nativeInfo=state.nativeInfo;consistencyIssues=state.consistencyIssues || [];
   hostProfile=cache.hostProfiles?.[GeoMaskConfig.aliasHost(hostKey,settings)] || null;
+  renderBackgroundHistory(state.lastError);
   return state;
 }
 async function perform(action) {
   if(busy) {showError(new Error('上一项操作仍在处理，请等待完成。'));return;}
-  setBusy(true);$('status-error').hidden=true;msg('正在处理…');
+  setBusy(true);$('status-error').hidden=true;msg('正在处理…','neutral');
   try {await action();}
   catch(error) {
     try {await readState();render();}
@@ -47,9 +51,15 @@ async function commitSettings(next,message,{resetFP=false,resetManual=false,onSa
   settings=response.settings;
   if(resetFP) fpDirty=false;if(resetManual) manualDrafts.delete(manualEditorPriority);
   onSaved?.();
-  await readState();render();$('refresh-note').hidden=false;msg(message);
+  await readState();await readWorkerStatus();render();$('refresh-note').hidden=false;msg(message);
 }
 function fmtTime(ts) {return ts ? new Date(ts).toLocaleString('zh-CN',{hour12:false}) : '暂无记录';}
+function renderBackgroundHistory(error) {
+  $('background-history').hidden=!error;
+  if(!error) return;
+  $('background-history-title').textContent='上次后台任务失败 · '+fmtTime(error.at);
+  $('background-history-detail').textContent=error.scope+'：'+error.message;
+}
 function coordOf(p) {return typeof p?.lat==='number' && typeof p?.lon==='number' ? p.lat.toFixed(4)+', '+p.lon.toFixed(4) : '暂无坐标';}
 function renderStartupStatus(status) {
   const badge=$('startup-badge');badge.className='badge';
@@ -62,7 +72,7 @@ function renderSite() {
   const view=GeoMaskPanel.describeSite({host:hostKey,settings,profile,hostProfile});
   $('h-host').textContent=hostKey || '当前标签页不是网页';
   $('site-config').hidden=!hostKey;
-  $('site-note').textContent=hostKey ? '按已保存配置计算；未实时读取网页，不能证明站点已采集的结果。' : '请在 HTTP/S 网页中打开面板。全局设置与身份管理仍可使用。';
+  $('site-note').textContent=hostKey ? '配置值与页面回执分别显示；不代表网站已采集的结果。' : '请在 HTTP/S 网页中打开面板。全局设置与身份管理仍可使用。';
   renderWorkerStatus();
   $('e-identity').textContent=view.binding.label;$('e-identity-source').textContent=view.binding.source;
   $('e-client').textContent=view.client.value;$('e-client-source').textContent=view.client.source;
@@ -82,9 +92,12 @@ function renderSite() {
   $('h-ip').textContent=hostKey ? view.siteIP : '—';$('h-loc').textContent=hostKey ? view.siteLocation : '—';
   $('h-src').textContent=view.probeSource;$('h-tz').textContent=hostProfile?.timezone || '暂无记录';
   $('h-probe-status').textContent=view.probeOutcome.message;
+  $('probe-badge').textContent=view.probeOutcome.confirmed ? '已回显' : '未确认';
+  $('probe-badge').className='badge '+(view.probeOutcome.confirmed ? 'good' : 'pending');
+  renderRuntimeSummary(view.probeOutcome);
   renderNetwork(GeoMaskIP.describe({host:hostKey,hostProfile,profile}));
   const probe=hostProfile?.probe;
-  $('h-probe').textContent=probe ? [probe.attemptedAt ? '尝试时间：'+fmtTime(probe.attemptedAt) : '',probe.endpoint,probe.observedAt ? '观测时间：'+fmtTime(probe.observedAt) : '',probe.fallbackReason,...(probe.errors || []).map(error=>error.endpoint+'：'+error.message)].filter(Boolean).join('\n') : '暂无探测证据，点击重新探测本站获取。';
+  $('h-probe').textContent=probe ? [probe.attemptedAt ? '尝试时间：'+fmtTime(probe.attemptedAt) : '',probe.endpoint,probe.observedAt ? '观测时间：'+fmtTime(probe.observedAt) : '',probe.fallbackReason,...(probe.errors || []).map(error=>[error.endpoint,error.message].filter(Boolean).join('：'))].filter(Boolean).join('\n') : '暂无探测证据，点击重新探测本站获取。';
   $('refreshHost').disabled=!hostKey;
   renderSiteBinding(view.binding);
 }
@@ -104,22 +117,6 @@ function renderNetwork(result) {
   $('d-network').textContent=[result.asn,result.organization].filter(Boolean).join(' · ') || '未提供';
   $('d-time').textContent=fmtTime(result.updatedAt);
 }
-async function readWorkerStatus() {
-  if(!hostKey || currentTabId==null) {workerStatus={mode:'unavailable',reason:'当前标签页不是可查询的网页。'};return;}
-  try {
-    const response=await chrome.tabs.sendMessage(currentTabId,{type:'getWorkerCompatibility'},{frameId:0});
-    if(!response?.ok) throw new Error('页面未返回 Worker 状态，请刷新网页。');
-    workerStatus=response.status;
-  } catch(error) {workerStatus={mode:'unavailable',reason:error.message};}
-}
-function renderWorkerStatus() {
-  const switched=workerStatus?.mode==='native';
-  $('worker-status').textContent=switched ? '已因 CSP 切换原生 Worker 入口（'+workerStatus.count+' 个）' :
-    workerStatus?.mode==='unavailable' ? '当前页面状态不可用：'+workerStatus.reason : '当前页面尚未报告自动切换';
-  $('worker-note').textContent=switched ? '这些 Worker 内时区、语言和部分指纹保持原生值；页面与请求头继续按配置处理。切换入口不代表启动成功，原生错误仍会报告。此处仅显示顶层页面报告，子 frame / 子 Worker 请查看其控制台。' :
-    '只在确认 CSP 禁止 blob Worker 时切换，不会修改网站 CSP。'+(settings.workerAutoFallback ? '自动切换已开启。' : '自动切换已关闭；已有原生 Worker 不会恢复伪装，需刷新网页。');
-  $('worker-check').disabled=!hostKey;
-}
 async function currentHost() {
   const [tab]=await chrome.tabs.query({active:true,currentWindow:true});
   currentTabId=tab?.id ?? null;
@@ -127,7 +124,7 @@ async function currentHost() {
 }
 async function load() {
   hostKey=await currentHost();const state=await readState();await readWorkerStatus();render();
-  if(state.lastError) showError(new Error(state.lastError.scope+'：'+state.lastError.message));else msg('已读取保存配置');
+  msg(pageConnection ? pageConnection.message : '已读取保存配置',pageConnection?.state==='error' ? 'error' : pageConnection && pageConnection.state!=='ready' ? 'warning' : 'success');
 }
 function showView(view) {
   const main=document.querySelector('main');
@@ -160,7 +157,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     });
   }
   const action=(id,fn,event='click')=>$(id).addEventListener(event,()=>perform(fn));
-  action('worker-check',async()=>{await readWorkerStatus();renderWorkerStatus();msg(workerStatus?.mode==='unavailable' ? '当前页面 Worker 状态不可用，请查看说明。' : '已读取当前页面 Worker 状态',workerStatus?.mode!=='unavailable');});
+  action('worker-check',async()=>{await readWorkerStatus();renderWorkerStatus();msg(pageConnection?.message || '当前页面状态不可用',pageConnection?.state==='error' ? 'error' : pageConnection?.state==='ready' ? 'success' : 'warning');});
+  action('page-reload',reloadCurrentPage);
+  action('worker-save',saveWorkerMode);
+  $('worker-mode').addEventListener('change',updateWorkerDraft);
+  $('worker-discard').addEventListener('click',discardWorkerDraft);
   action('enabled',()=>commitSettings({...settings,enabled:$('enabled').checked},$('enabled').checked ? '扩展已启用，请刷新网页' : '扩展已暂停，请刷新网页以统一状态'),'change');
   for(const key of TOGGLES) action(key,()=>commitSettings({...settings,[key]:$(key).checked},'全局开关已保存'),'change');
   setupDeviceControls('fp',updateFPDraft);

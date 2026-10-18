@@ -9,6 +9,7 @@
   --accent: #e49b72;
   --green: #a9d9ba;
   --danger: #ffb2a5;
+  --warning: #f1cf8b;
   font-family:
     system-ui,
     -apple-system,
@@ -578,4 +579,24 @@ input[readonly] {
   box-shadow: 0 -8px 12px var(--card);
 }
 .identity-savebar .btns { margin-top: 0; }
+.compact-status { padding: 10px 12px; }
+.compact-status .section-heading { align-items: flex-start; }
+#page-status { font-size: 12px; font-weight: 600; }
+.state-strip { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.state-chip { border-radius: 5px; padding: 3px 6px; background: var(--inset); color: var(--muted); font-size: 10px; }
+.state-chip.good { color: var(--green); }
+.state-chip.warning { color: var(--warning); }
+.state-chip.bad { color: var(--danger); }
+.status-actions { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.status-actions details { min-width: 0; flex: 1; margin-top: 0; }
+.status-actions button { flex: none; }
+.section-caption { font-size: 10px; font-weight: 400; color: var(--muted); margin-left: 7px; }
+#site-config > .effective-row { padding: 7px 0; }
+#worker-details summary { display: flex; align-items: center; gap: 7px; }
+#worker-details summary::before { content: '▸'; }
+#worker-details[open] summary::before { content: '▾'; }
+#worker-state { margin-left: auto; }
+.history-notice { margin-top: 0; }
+.history-notice summary { color: var(--warning); }
+#background-history-detail, #h-probe { white-space: pre-line; }
 .identity-savebar button { flex: 1; padding: 8px 7px; font-size: 12px; }

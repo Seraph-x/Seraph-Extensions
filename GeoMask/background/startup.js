@@ -22,13 +22,15 @@ globalThis.GeoMaskStartup=(()=>{
     const s=GeoMaskConfig.settingsWithDefaults(state.settings);
     const nodes=[{type:'default',host:''},
       ...Object.keys(s.identityByDomain).map(host=>({type:'binding',host})),
-      ...new Set([...Object.keys(state.hostProfiles||{}),...Object.keys(s.hostAliases)])].map(node=>typeof node==='string' ? {type:'exact',host:node} : node);
+      ...new Set([...Object.keys(state.hostProfiles||{}),...Object.keys(s.hostAliases),...Object.keys(s.workerModeByDomain)])].map(node=>typeof node==='string' ? {type:'exact',host:node} : node);
     return nodes.map(node=>{
       const excludes=nodes.filter(other=>{
         if(other===node || other.type==='default' || node.type==='exact') return false;
         return node.type==='default' || (within(other.host,node.host) && (other.type==='exact' || other.host!==node.host));
       }).flatMap(patterns);
       const cfg=GeoMaskConfig.effectiveConfig(state.profile,s,node.type==='exact' ? state.hostProfiles : {},node.host);
+      // Bindings cover child hosts; Worker modes belong to exact partitions.
+      if(node.type==='binding') cfg.workerMode='auto';
       return {id:PREFIX+node.type+(node.host ? '-'+node.host : ''),
         matches:node.type==='default' ? WEB : patterns(node),excludeMatches:[...new Set(excludes)],
         runAt:'document_start',world:'MAIN',allFrames:true,cfg};

@@ -94,6 +94,9 @@ async function fetchText(url, timeout = 5000, redirect = 'follow') {
     const res = await fetch(url, {
       signal: ctrl.signal, cache: 'no-store', credentials: 'omit', redirect
     });
+    if(redirect==='manual' && (res.type==='opaqueredirect' || (res.status>=300 && res.status<400))) {
+      throw Object.assign(new Error('回显请求发生重定向；未跟随，避免将其他站点的出口归给本站'),{kind:'redirect',status:res.status || undefined});
+    }
     if (!res.ok) throw Object.assign(new Error('HTTP ' + res.status),{status:res.status});
     return await res.text();
   } finally {
@@ -113,18 +116,22 @@ async function getSettings() {
 
 /* ============ 探测：目标站自己的 IP 回显 ============ */
 async function probeHostTrace(host) {
+  if(host==='chromewebstore.google.com') {
+    const error=new Error('Chrome 商店是受保护站点，不支持此扩展的本站回显探测');
+    error.diagnostics=[{kind:'restricted-site',message:error.message}];throw error;
+  }
   const s=await getSettings();
   const errors=[];
   for(const template of s.probeTemplates) {
     const endpoint=String(template).replaceAll('{host}',host);
     let received=false;
     try {
-      const text=await fetchText(endpoint,5000,'error');
+      const text=await fetchText(endpoint,5000,'manual');
       received=true;
       const echo=GeoMaskProbe.parseEcho(text);
       return {...echo,endpoint,source:echo.format==='trace' ? 'host-trace' : 'host-echo',errors,observedAt:Date.now()};
     } catch(error) {
-      const kind=received ? 'invalid-response' : error.status ? 'http' : error.name==='AbortError' ? 'timeout' : 'network';
+      const kind=error.kind || (received ? 'invalid-response' : error.status ? 'http' : error.name==='AbortError' ? 'timeout' : 'network');
       errors.push({endpoint,kind,...(error.status ? {status:error.status} : {}),message:String(error.message || error)});
     }
   }
