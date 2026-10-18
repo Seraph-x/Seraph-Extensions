@@ -70,8 +70,9 @@ function renderSite() {
   for(const [id,field] of [['timezone',view.timezone],['language',view.language],['device',view.device]]) {
     $('e-'+id).textContent=field.value;$('e-'+id+'-source').textContent=field.source;
   }
-  $('e-coordinates').textContent=view.latitude.active ? Number(view.latitude.value).toFixed(4)+', '+Number(view.longitude.value).toFixed(4) : '浏览器原始定位';
+  $('e-coordinates').textContent=view.latitude.active ? Number(view.latitude.value).toFixed(4)+', '+Number(view.longitude.value).toFixed(4) : view.latitude.value==='定位不可用' ? '定位不可用' : '浏览器原始定位';
   $('e-coordinates-source').textContent=view.latitude.active ? '纬度：'+view.latitude.source+' · 经度：'+view.longitude.source+(settings.jitter ? ' · 轻微抖动' : '') : view.latitude.source;
+  $('e-geolocation-note').textContent=view.geolocationNote;
   const features=[['canvas','Canvas像素'],['webgl','显卡标识'],['audio','音频频谱']].filter(([key])=>view.cfg.fp[key]).map(([,label])=>label);
   $('e-fingerprint').textContent=view.fingerprintEnabled ? (features.length ? features.join(' / ') : '这三项未开启') : '已关闭';
   $('e-seed-source').textContent=view.fingerprintEnabled ? view.seedSource : '独立于时区、语言与定位开关';

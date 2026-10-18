@@ -109,6 +109,7 @@
               <div>
                 <b id="e-coordinates">—</b
                 ><small id="e-coordinates-source">—</small>
+                <small id="e-geolocation-note">—</small>
               </div>
             </div>
             <div class="effective-row">
@@ -593,9 +594,9 @@
               ></label
             ><label class="line"
               ><input id="spoofGeolocation" type="checkbox" /><span
-                >覆盖网页定位坐标</span
+                >授权后使用 GeoMask 定位坐标</span
               ></label
-            ><label class="line"
+            ><p class="hint">遵循 Chrome 网站定位权限。拒绝时不返回坐标；配置缺失时返回位置不可用。关闭此项会恢复浏览器原生定位。</p><label class="line"
               ><input id="spoofLanguage" type="checkbox" /><span
                 >覆盖浏览器语言 navigator.language</span
               ></label

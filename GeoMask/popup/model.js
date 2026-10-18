@@ -97,15 +97,18 @@ globalThis.GeoMaskPanel=(()=>{
       source:syntheticClient ? (identity?.fp?.uaCH ? '身份 UA / UA-CH 设置' : '继承全局 UA / UA-CH 设置') : 'UA 与 UA-CH 均保留原生'};
     const deviceActive=!!(fp.enabled && fp.navigator);
     const siteIP=hostProfile?.probe ? hostProfile.probe.observedIp : (hostProfile?.source?.startsWith('host-') ? hostProfile.ip : null);
-    const coordinatesAvailable=typeof cfg.lat==='number' && typeof cfg.lon==='number';
+    const coordinatesAvailable=Number.isFinite(cfg.lat) && Number.isFinite(cfg.lon);
     const coordinate=key=>cfg.enabled && cfg.spoofGeolocation && !coordinatesAvailable
-      ? {active:false,value:'浏览器原始值',source:'坐标不完整，使用浏览器定位'} : field(key,cfg.spoofGeolocation);
+      ? {active:false,value:'定位不可用',source:'坐标不完整，不会返回原生位置'} : field(key,cfg.spoofGeolocation);
+    const geolocationNote=!cfg.enabled || !cfg.spoofGeolocation ? '定位处理已关闭；Chrome 授权后可能返回真实位置。'
+      : !coordinatesAvailable ? '坐标不完整：定位请求返回位置不可用，不调用真实定位。'
+      : '定位权限由 Chrome 管理；拒绝不返回位置，允许后仅返回 GeoMask 坐标。';
     const probeSource=hostProfile?.probe?.stale ? '本次未取得地理结果 · 保留旧配置'
       : hostProfile?.source==='global' ? (siteIP ? '本站 IP 已回显 · 归属地参考来自全局探测' : '本站未回显 · 归属地参考来自全局探测')
       : {'host-trace':'本站回显（仅代表探测请求）','host-echo':'本站回显（仅代表探测请求）','host-trace+country':'本站回显 · 国家代表位置'}[hostProfile?.source] || '尚未探测';
     return {cfg,binding,client,fonts:{value:fp.enabled && fp.fonts ? '文字测量扰动' : '保留原生测量',source:'不替换字体库，不按 IP 切换字体'},timezone:field('timezone',cfg.spoofTimezone),language:field('locale',cfg.spoofLanguage),
       intlLocale:field('locale',cfg.spoofIntlLocale),latitude:coordinate('lat'),
-      longitude:coordinate('lon'),fingerprintEnabled:!!fp.enabled,probeSource,probeOutcome:probeOutcome(hostProfile,siteIP),
+      longitude:coordinate('lon'),geolocationNote,fingerprintEnabled:!!fp.enabled,probeSource,probeOutcome:probeOutcome(hostProfile,siteIP),
       device:{active:deviceActive,value:deviceActive ? PROFILE_NAMES[fp.profile] : '浏览器原始设备信息',
         source:deviceActive ? (identity?.fp?.profile ? '身份设备档案' : '全局设备档案') : (!cfg.enabled ? '扩展已暂停' : !fp.enabled ? '设备与指纹总开关关闭' : '设备参数覆盖关闭')},
       seedSource:identity?.fp?.seed ? '身份独立种子' : '继承全局种子',
