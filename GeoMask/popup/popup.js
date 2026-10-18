@@ -45,7 +45,7 @@ async function commitSettings(next,message,{resetFP=false,resetManual=false,onSa
   GeoMaskConfig.validateSettings(next);
   const response=await request({type:'saveSettings',settings:next});
   settings=response.settings;
-  if(resetFP) fpDirty=false;if(resetManual) manualDirty=false;
+  if(resetFP) fpDirty=false;if(resetManual) manualDrafts.delete(manualEditorPriority);
   onSaved?.();
   await readState();render();$('refresh-note').hidden=false;msg(message);
 }
@@ -92,8 +92,6 @@ function renderSettings() {
   for(const key of TOGGLES) $(key).checked=settings[key];
   renderGlobalForms();
   $('device-issues').hidden=!consistencyIssues.length;$('device-issues').textContent=consistencyIssues.join('\n');
-  const fields=Object.keys(settings.manual || {}).filter(key=>settings.manual[key]!=null);
-  $('manual-status').textContent='已保存优先级：'+(settings.manualPriority==='override' ? '最高 · 强制覆盖' : '最低 · 默认位置')+'。'+(fields.length ? '已填写：'+fields.map(key=>({timezone:'时区',locale:'语言',lat:'纬度',lon:'经度'}[key])).join('、') : '尚未填写位置，优先级暂不影响结果。输入框提示不是配置值。');
   $('startup-mode').value=settings.startupMode;renderStartupStatus(startupStatus);
   for(const [id,value] of Object.entries({'s-ip':profile?.ip || '暂无结果','s-loc':GeoMaskPanel.locationOf(profile),'s-tz':profile?.timezone || '暂无结果','s-coord':coordOf(profile),'s-isp':profile?.isp || '未知','s-time':fmtTime(profile?.updatedAt),'s-src':profile?.source || '暂无结果'})) $(id).textContent=value;
 }
@@ -144,7 +142,7 @@ function collectFP() {
 }
 function collectManual() {
   const manual={};
-  for(const [key,id] of [['timezone','m-tz'],['locale','m-locale'],['lat','m-lat'],['lon','m-lon']]) {
+  for(const [key,id] of MANUAL_INPUTS) {
     const value=$(id).value.trim();
     if($(id).validity.badInput) throw new Error('请输入有效的'+(key==='lat' ? '纬度' : '经度'));
     if(value) manual[key]=['lat','lon'].includes(key) ? Number(value) : value;
@@ -167,9 +165,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   setupDeviceControls('fp',updateFPDraft);
   for(const id of ['fp-enabled','fp-seed','fp-canvas','fp-webgl','fp-audio','fp-fonts']) $(id).addEventListener('input',updateFPDraft);
   for(const id of MANUAL_FIELDS) $(id).addEventListener('input',updateManualDraft);
+  $('m-priority').addEventListener('change',switchManualPriority);
   action('fp-save',()=>commitSettings({...settings,fp:collectFP()},'全局设备与指纹已保存',{resetFP:true}));
-  action('save',()=>commitSettings({...settings,manual:collectManual(),manualPriority:$('m-priority').value},'全局位置与优先级已保存，请刷新网页',{resetManual:true}));
-  action('reset',()=>commitSettings({...settings,manual:null},'全局位置已清除，已保存的优先级保留',{resetManual:true}));
+  action('save',()=>commitSettings(GeoMaskConfig.withManualLocation(settings,{priority:manualEditorPriority,manual:collectManual()}),'此组位置已保存并启用，请刷新网页',{resetManual:true}));
+  action('reset',()=>commitSettings(GeoMaskConfig.withManualLocation(settings,{priority:manualEditorPriority,manual:null,activate:false}),'此组位置已清除，另一组与启用优先级保留',{resetManual:true}));
   action('startup-mode',()=>commitSettings({...settings,startupMode:$('startup-mode').value},'启动模式已保存，请刷新网页'),'change');
   action('startup-check',async()=>{const result=await request({type:'syncStartup'});startupStatus=result.startupStatus;renderStartupStatus(startupStatus);msg('启动注册状态已更新');});
   action('refresh',async()=>{

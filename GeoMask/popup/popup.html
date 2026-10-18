@@ -623,13 +623,13 @@
           </details>
           <section id="manual-card" class="card">
             <h3>全局位置与优先级</h3>
-            <label class="field" for="m-priority">全局位置优先级<select id="m-priority">
+            <label class="field" for="m-priority">选择要编辑的位置配置<select id="m-priority">
               <option value="fallback">最低 · 默认位置（身份 / 本站优先）</option>
               <option value="override">最高 · 覆盖身份与本站位置</option>
             </select></label>
             <p id="m-priority-note" class="hint"></p>
             <p class="hint">
-              按字段取第一个已填写的值；留空继续继承。位置与优先级一起保存，不改变实际 IP。
+              两种优先级各自保存位置，切换后显示对应配置并保留各自草稿；点击保存才启用。按字段取第一个已填写的值，留空继续继承，不改变实际 IP。
             </p>
             <p id="manual-status" class="hint"></p>
             <div class="grid">
@@ -653,8 +653,8 @@
             <p id="manual-dirty" class="draft" hidden>有未保存的修改</p>
             <div class="btns">
               <button id="manual-discard">撤销本组修改</button
-              ><button id="save" class="primary">保存位置与优先级</button
-              ><button id="reset">清除填写的位置</button>
+              ><button id="save" class="primary">保存此组位置</button
+              ><button id="reset">清除此组位置</button>
             </div>
           </section>
           <details class="card">

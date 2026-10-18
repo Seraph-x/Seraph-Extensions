@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS = {
   },
   manual: null,
   manualPriority: 'fallback',
+  manualByPriority: {},
   hostAliases: {},
   identities: {},
   identityByDomain: {},
@@ -154,6 +155,19 @@ function aliasHost(host, settings) {
 function settingsWithDefaults(value = {}) {
   return {...DEFAULT_SETTINGS, ...value, fp:{...DEFAULT_SETTINGS.fp, ...value.fp}};
 }
+function manualLocationFor(settings,priority) {
+  const s=settingsWithDefaults(settings);
+  // Keep `manual` authoritative for the active priority, including legacy settings.
+  return priority===s.manualPriority ? s.manual : s.manualByPriority[priority] ?? null;
+}
+function withManualLocation(settings,{priority,manual,activate=true}) {
+  const s=settingsWithDefaults(settings);
+  if(!activate) return priority===s.manualPriority ? {...s,manual}
+    : {...s,manualByPriority:{...s.manualByPriority,[priority]:manual}};
+  const manualByPriority={...s.manualByPriority,[s.manualPriority]:s.manual};
+  delete manualByPriority[priority];
+  return {...s,manualPriority:priority,manual,manualByPriority};
+}
 function languagesFor(locale) {
   return locale ? [...new Set([locale, locale.split('-')[0]])] : null;
 }
@@ -233,6 +247,11 @@ function validateSettings(input) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError(name + ' 必须是对象');
   };
   validateGeo(s.manual); validateFp(s.fp);
+  record(s.manualByPriority,'独立位置配置');
+  for(const [priority,manual] of Object.entries(s.manualByPriority)) {
+    if(!['fallback','override'].includes(priority)) throw new TypeError('无效独立位置优先级');
+    validateGeo(manual);
+  }
   for (const key of ['identities','identityByDomain','hostAliases']) record(s[key],key);
   for (const identity of Object.values(s.identities)) {
     record(identity,'身份');
@@ -330,5 +349,5 @@ function validateBrowserProfiles(settings) {
     catch(error) {throw new TypeError(label+'：'+error.message);}
   }
 }
-return Object.freeze({DEFAULT_SETTINGS, PRESETS, profileOptions, validateUAFields, nativeBrowserInfo, configurationIssues, validateBrowserProfiles, normalizeHost, aliasHost, domainValue, settingsWithDefaults, languagesFor, languageHeader, browserVersion, resolvePreset, resolveLocation, effectiveConfig, validateSettings});
+return Object.freeze({DEFAULT_SETTINGS, PRESETS, profileOptions, validateUAFields, nativeBrowserInfo, configurationIssues, validateBrowserProfiles, normalizeHost, aliasHost, domainValue, settingsWithDefaults, manualLocationFor, withManualLocation, languagesFor, languageHeader, browserVersion, resolvePreset, resolveLocation, effectiveConfig, validateSettings});
 })();
