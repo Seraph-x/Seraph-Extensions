@@ -332,7 +332,7 @@
               <label class="field"
                 >时区、语言与坐标<select id="id-geo-mode">
                   <option value="auto">
-                    自动 · 每个站点跟随自己的探测结果
+                    自动 · 按位置优先级继承
                   </option>
                   <option value="fixed">固定 · 使用下面填写的配置</option>
                 </select></label
@@ -360,7 +360,7 @@
                 /></label>
               </div>
               <p class="hint">
-                全局手动覆盖优先于身份位置。固定模式下，空字段仍跟随探测。
+                全局位置设为“最高”时优先于身份位置；设为“最低”时身份固定字段优先。空字段按位置优先级继承。
               </p>
               <details id="identity-seed-details">
                 <summary>指纹种子与继承详情</summary>
@@ -622,9 +622,14 @@
             >
           </details>
           <section id="manual-card" class="card">
-            <h3>全局位置覆盖</h3>
+            <h3>全局位置与优先级</h3>
+            <label class="field" for="m-priority">全局位置优先级<select id="m-priority">
+              <option value="fallback">最低 · 默认位置（身份 / 本站优先）</option>
+              <option value="override">最高 · 覆盖身份与本站位置</option>
+            </select></label>
+            <p id="m-priority-note" class="hint"></p>
             <p class="hint">
-              最高优先级，覆盖所有身份和站点的同名字段。留空字段按身份与探测配置决定。
+              按字段取第一个已填写的值；留空继续继承。位置与优先级一起保存，不改变实际 IP。
             </p>
             <p id="manual-status" class="hint"></p>
             <div class="grid">
@@ -648,8 +653,8 @@
             <p id="manual-dirty" class="draft" hidden>有未保存的修改</p>
             <div class="btns">
               <button id="manual-discard">撤销本组修改</button
-              ><button id="save" class="primary">保存全局位置覆盖</button
-              ><button id="reset">清除所有全局位置覆盖</button>
+              ><button id="save" class="primary">保存位置与优先级</button
+              ><button id="reset">清除填写的位置</button>
             </div>
           </section>
           <details class="card">

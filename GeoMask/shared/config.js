@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS = {
     media: true
   },
   manual: null,
+  manualPriority: 'fallback',
   hostAliases: {},
   identities: {},
   identityByDomain: {},
@@ -159,6 +160,24 @@ function languagesFor(locale) {
 function languageHeader(languages) {
   return languages.map((language,index)=>index ? language+';q='+(1-index*0.1).toFixed(1) : language).join(', ');
 }
+function resolveLocation({globalProfile,hostProfile,manual,priority,fixed}) {
+  const historical=hostProfile?.probe?.stale;
+  const site=hostProfile && hostProfile.source!=='global' && !historical;
+  const layers=[[globalProfile,'global']];
+  if(hostProfile && !site) layers.push([hostProfile,historical ? 'historical' : 'global']);
+  if(priority==='fallback') layers.push([manual,'manual-default']);
+  if(site) layers.push([hostProfile,'site']);
+  layers.push([fixed,'identity']);
+  if(priority==='override') layers.push([manual,'manual-override']);
+  const geo={},sources={};
+  for(const [values,source] of layers) {
+    for(const key of ['timezone','locale','lat','lon']) {
+      if(values?.[key]==null || values[key]==='') continue;
+      geo[key]=values[key];sources[key]=source;
+    }
+  }
+  return {geo,sources};
+}
 function effectiveConfig(globalProfile, settings, hostProfiles, host) {
   const s = settingsWithDefaults(settings);
   const key = aliasHost(host, s);
@@ -169,7 +188,7 @@ function effectiveConfig(globalProfile, settings, hostProfiles, host) {
   fp.browserVersion=browserVersion();
   const base = hostProfiles?.[key] || globalProfile || {};
   const fixed = identity?.geo?.mode === 'fixed' ? identity.geo : {};
-  const geo = {...base, ...fixed, ...(s.manual || {})};
+  const {geo}=resolveLocation({globalProfile,hostProfile:hostProfiles?.[key],manual:s.manual,priority:s.manualPriority,fixed});
   return {
     enabled:s.enabled, spoofTimezone:s.spoofTimezone, spoofGeolocation:s.spoofGeolocation,
     spoofLanguage:s.spoofLanguage, spoofIntlLocale:s.spoofIntlLocale,
@@ -193,6 +212,7 @@ function validateSettings(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('设置必须是对象');
   const s = settingsWithDefaults(input);
   if (!['standard','enhanced'].includes(s.startupMode)) throw new TypeError('无效启动模式');
+  if (!['fallback','override'].includes(s.manualPriority)) throw new TypeError('无效全局位置优先级');
   for (const key of ['enabled','spoofTimezone','spoofGeolocation','spoofLanguage','spoofIntlLocale','blockWebRTC','rewriteAcceptLanguage','jitter','rtcFilter','workerAutoFallback']) {
     if (typeof s[key] !== 'boolean') throw new TypeError(key + ' 必须是布尔值');
   }
@@ -310,5 +330,5 @@ function validateBrowserProfiles(settings) {
     catch(error) {throw new TypeError(label+'：'+error.message);}
   }
 }
-return Object.freeze({DEFAULT_SETTINGS, PRESETS, profileOptions, validateUAFields, nativeBrowserInfo, configurationIssues, validateBrowserProfiles, normalizeHost, aliasHost, domainValue, settingsWithDefaults, languagesFor, languageHeader, browserVersion, resolvePreset, effectiveConfig, validateSettings});
+return Object.freeze({DEFAULT_SETTINGS, PRESETS, profileOptions, validateUAFields, nativeBrowserInfo, configurationIssues, validateBrowserProfiles, normalizeHost, aliasHost, domainValue, settingsWithDefaults, languagesFor, languageHeader, browserVersion, resolvePreset, resolveLocation, effectiveConfig, validateSettings});
 })();

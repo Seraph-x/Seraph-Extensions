@@ -83,13 +83,10 @@ globalThis.GeoMaskPanel=(()=>{
     const binding=bindingFor(host,s);
     const identity=s.identities[binding.id];
     const cfg=GeoMaskConfig.effectiveConfig(profile,s,hostProfile ? {[hostProfile.host || GeoMaskConfig.aliasHost(host,s)]:hostProfile} : {},host);
-    const geoSource=hostProfile?.probe?.stale ? '本站历史配置（本次未取得地理结果）'
-      : hostProfile && hostProfile.source!=='global' ? '本站探测' : '全局探测（本站未取得地理结果）';
-    const fieldSource=key=>{
-      if(s.manual?.[key]!=null && s.manual[key]!=='') return '全局手动覆盖';
-      if(identity?.geo?.mode==='fixed' && identity.geo[key]!=null && identity.geo[key]!=='') return '身份固定配置';
-      return geoSource;
-    };
+    const {sources}=GeoMaskConfig.resolveLocation({globalProfile:profile,hostProfile,manual:s.manual,priority:s.manualPriority,
+      fixed:identity?.geo?.mode==='fixed' ? identity.geo : {}});
+    const fieldSource=key=>({'manual-override':'全局手动覆盖','manual-default':'全局默认位置',identity:'身份固定配置',
+      site:'本站探测',historical:'本站历史配置（本次未取得地理结果）',global:'全局探测（本站未取得地理结果）'}[sources[key]] || '没有可用配置');
     const field=(key,enabled)=>({active:!!(cfg.enabled && enabled && cfg[key]!=null),
       value:cfg.enabled && enabled && cfg[key]!=null ? cfg[key] : '浏览器原始值',
       source:cfg.enabled && enabled && cfg[key]!=null ? fieldSource(key) : (!cfg.enabled ? '扩展已暂停' : enabled ? '没有可用配置' : '此项未开启')});
@@ -104,7 +101,7 @@ globalThis.GeoMaskPanel=(()=>{
     const coordinate=key=>cfg.enabled && cfg.spoofGeolocation && !coordinatesAvailable
       ? {active:false,value:'浏览器原始值',source:'坐标不完整，使用浏览器定位'} : field(key,cfg.spoofGeolocation);
     const probeSource=hostProfile?.probe?.stale ? '本次未取得地理结果 · 保留旧配置'
-      : hostProfile?.source==='global' ? (siteIP ? '本站 IP 已回显 · 地理配置使用全局结果' : '本站未回显 · 地理配置使用全局结果')
+      : hostProfile?.source==='global' ? (siteIP ? '本站 IP 已回显 · 归属地参考来自全局探测' : '本站未回显 · 归属地参考来自全局探测')
       : {'host-trace':'本站回显（仅代表探测请求）','host-echo':'本站回显（仅代表探测请求）','host-trace+country':'本站回显 · 国家代表位置'}[hostProfile?.source] || '尚未探测';
     return {cfg,binding,client,fonts:{value:fp.enabled && fp.fonts ? '文字测量扰动' : '保留原生测量',source:'不替换字体库，不按 IP 切换字体'},timezone:field('timezone',cfg.spoofTimezone),language:field('locale',cfg.spoofLanguage),
       intlLocale:field('locale',cfg.spoofIntlLocale),latitude:coordinate('lat'),

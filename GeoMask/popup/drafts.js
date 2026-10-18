@@ -1,6 +1,6 @@
 'use strict';
 const FP_FIELDS=['fp-enabled','fp-seed','fp-canvas','fp-webgl','fp-audio','fp-fonts',...DEVICE_INPUTS.map(name=>'fp-'+name)];
-const MANUAL_FIELDS=['m-tz','m-locale','m-lat','m-lon'];
+const MANUAL_FIELDS=['m-priority','m-tz','m-locale','m-lat','m-lon'];
 let fpBaseline={},manualBaseline={};
 const identityBaselines=new Map();
 function snapshotFields(ids) {
@@ -20,6 +20,7 @@ function renderGlobalForms() {
   $('fp-saved-summary').textContent='已保存：'+GeoMaskPanel.fingerprintSummary(settings.fp);
   if(fpDraft) {renderDeviceEditor('fp',settings.fp,fpDraft);restoreFields(fpDraft);}
   for(const [key,id] of [['timezone','m-tz'],['locale','m-locale'],['lat','m-lat'],['lon','m-lon']]) $(id).value=settings.manual?.[key] ?? '';
+  $('m-priority').value=settings.manualPriority;
   manualBaseline=snapshotFields(MANUAL_FIELDS);
   if(manualDraft) restoreFields(manualDraft);
   updateFPDraft();updateManualDraft();
@@ -35,6 +36,9 @@ function updateFPDraft() {
 }
 function updateManualDraft() {
   manualDirty=GeoMaskPanel.formChanged(snapshotFields(MANUAL_FIELDS),manualBaseline,'m');
+  $('m-priority-note').textContent=$('m-priority').value==='override'
+    ? '最高：全局位置 → 身份固定位置 → 本站地理结果 → 全局探测结果。'
+    : '最低：身份固定位置 → 本站地理结果 → 全局位置 → 全局探测结果。本站只有 IP、没有地理结果时，也使用这里的默认位置。';
   $('manual-dirty').hidden=!manualDirty;updateDraftSummary();
 }
 function updateDraftSummary() {
@@ -43,7 +47,7 @@ function updateDraftSummary() {
   for(const [id,count] of [['pending-settings',settingsCount],['pending-identities',identityCount],['pending-site',Number(siteSelectionDirty)]]) {
     $(id).hidden=!count;$(id).textContent=String(count);
   }
-  const groups=[fpDirty && '设备设置',manualDirty && '位置覆盖',identityCount && identityCount+' 个身份',siteSelectionDirty && '本站绑定'].filter(Boolean);
+  const groups=[fpDirty && '设备设置',manualDirty && '全局位置',identityCount && identityCount+' 个身份',siteSelectionDirty && '本站绑定'].filter(Boolean);
   $('pending-summary').hidden=!groups.length;
   $('pending-text').textContent=groups.length ? '未保存：'+groups.join('、') : '';
   $('jump-drafts').disabled=busy;

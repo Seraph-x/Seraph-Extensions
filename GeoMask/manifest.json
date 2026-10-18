@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GeoMask — IP 地理/时区一致性伪装",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "description": "按站点配置时区、地理位置、语言及部分设备指纹，统一网页 API 与请求头，并限制 WebRTC 非代理 UDP。",
   "minimum_chrome_version": "135",
   "permissions": [
