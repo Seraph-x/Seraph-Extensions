@@ -1,0 +1,68 @@
+{
+  "manifest_version": 3,
+  "name": "GeoMask — IP 地理/时区一致性伪装",
+  "version": "2.4.1",
+  "description": "按站点配置时区、地理位置、语言及部分设备指纹，统一网页 API 与请求头，并限制 WebRTC 非代理 UDP。",
+  "minimum_chrome_version": "135",
+  "permissions": [
+    "storage",
+    "privacy",
+    "tabs",
+    "alarms",
+    "webNavigation",
+    "declarativeNetRequestWithHostAccess",
+    "scripting",
+    "userScripts"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "GeoMask",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "shared/config.js",
+        "content/bridge.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "world": "ISOLATED"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/opaque.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "world": "MAIN"
+    }
+  ]
+}

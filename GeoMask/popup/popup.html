@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>GeoMask</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img class="mark" src="../icons/icon128.png" width="32" height="32" alt="" />
+        <div>
+          <h1>GeoMask <small id="version"></small></h1>
+          <p id="master-status">正在读取配置…</p>
+        </div>
+      </div>
+      <label class="switch" title="扩展总开关"
+        ><input
+          id="enabled"
+          type="checkbox"
+          aria-label="启用 GeoMask"
+          disabled /><span class="slider"></span
+      ></label>
+      <nav class="tabs" role="tablist" aria-label="面板页面">
+        <button
+          id="tab-site"
+          role="tab"
+          aria-controls="view-site"
+          aria-selected="true"
+          data-view="site"
+        >
+          本站概览 <span id="pending-site" class="tab-count" hidden></span>
+        </button>
+        <button
+          id="tab-identities"
+          role="tab"
+          aria-controls="view-identities"
+          aria-selected="false"
+          tabindex="-1"
+          data-view="identities"
+        >
+          身份管理
+          <span id="pending-identities" class="tab-count" hidden></span>
+        </button>
+        <button
+          id="tab-settings"
+          role="tab"
+          aria-controls="view-settings"
+          aria-selected="false"
+          tabindex="-1"
+          data-view="settings"
+        >
+          全局设置 <span id="pending-settings" class="tab-count" hidden></span>
+        </button>
+      </nav>
+    </header>
+    <main>
+      <p
+        id="status-error"
+        tabindex="-1"
+        class="notice error"
+        role="alert"
+        hidden
+      ></p>
+      <p id="refresh-note" class="refresh-hint" hidden>
+        配置已保存 · 刷新网页后统一应用
+      </p>
+      <fieldset id="controls" disabled>
+        <div id="view-site" role="tabpanel" aria-labelledby="tab-site">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">当前网站</span>
+              <h2 id="h-host">读取中</h2>
+            </div>
+            <span id="startup-badge" class="badge">启动状态</span>
+          </div>
+          <p id="site-note" class="hint">
+            以下按已保存配置计算；未实时读取网页，不能证明站点已采集的结果。
+          </p>
+          <section id="site-config" class="card accent">
+            <h3>本站将使用的配置</h3>
+            <div class="effective-row">
+              <span>身份</span>
+              <div>
+                <b id="e-identity">—</b><small id="e-identity-source">—</small>
+              </div>
+            </div>
+            <div class="effective-row">
+              <span>时区</span>
+              <div>
+                <b id="e-timezone">—</b><small id="e-timezone-source">—</small>
+              </div>
+            </div>
+            <div class="effective-row">
+              <span>语言</span>
+              <div>
+                <b id="e-language">—</b><small id="e-language-source">—</small>
+              </div>
+            </div>
+            <div class="effective-row">
+              <span>定位坐标</span>
+              <div>
+                <b id="e-coordinates">—</b
+                ><small id="e-coordinates-source">—</small>
+              </div>
+            </div>
+            <div class="effective-row">
+              <span>设备档案</span>
+              <div>
+                <b id="e-device">—</b><small id="e-device-source">—</small>
+              </div>
+            </div>
+            <div class="effective-row">
+              <span>浏览器标识</span>
+              <div>
+                <b id="e-client">—</b><small id="e-client-source">—</small>
+              </div>
+            </div>
+            <div class="effective-row">
+              <span>字体</span>
+              <div>
+                <b id="e-fonts">—</b><small id="e-fonts-source">—</small>
+              </div>
+            </div>
+            <div class="effective-row">
+              <span>指纹处理</span>
+              <div>
+                <b id="e-fingerprint">—</b><small id="e-seed-source">—</small>
+              </div>
+            </div>
+            <details>
+              <summary>语言接口与请求头</summary>
+              <dl class="kv-list">
+                <div>
+                  <dt>Intl 默认语言</dt>
+                  <dd id="e-intl">—</dd>
+                </div>
+                <div>
+                  <dt>Accept-Language</dt>
+                  <dd id="e-header-language">—</dd>
+                </div>
+                <div>
+                  <dt>User-Agent</dt>
+                  <dd id="e-header-ua">—</dd>
+                </div>
+                <div>
+                  <dt>UA-CH</dt>
+                  <dd id="e-ua-ch">—</dd>
+                </div>
+              </dl>
+            </details>
+          </section>
+          <section id="site-binding" class="card">
+            <h3>本站身份绑定</h3>
+            <label class="field" for="site-identity"
+              >为当前域名指定身份<select id="site-identity"></select
+            ></label>
+            <p id="site-binding-source" class="hint"></p>
+            <div class="btns">
+              <button id="site-bind" class="primary">保存本站绑定</button
+              ><button id="id-unbind">解除本站绑定</button>
+            </div>
+            <p class="hint">
+              选择后点击保存。没有本站绑定时，依次继承父域绑定、默认身份、全局基础设置。
+            </p>
+          </section>
+          <section class="card">
+            <div class="section-heading">
+              <h3>本站出口探测</h3>
+              <button id="refreshHost" class="mini">重新探测本站</button>
+            </div>
+            <dl class="kv-list">
+              <div>
+                <dt>回显 IP</dt>
+                <dd id="h-ip">—</dd>
+              </div>
+              <div>
+                <dt>归属地参考</dt>
+                <dd id="h-loc">—</dd>
+              </div>
+              <div>
+                <dt>结果来源</dt>
+                <dd id="h-src">—</dd>
+              </div>
+            </dl>
+            <details>
+              <summary>探测证据与参考信息</summary>
+              <p id="h-probe" class="hint"></p>
+              <dl class="kv-list">
+                <div><dt>探测时区</dt><dd id="h-tz">—</dd></div>
+                <div><dt>参考 IP</dt><dd id="d-target">—</dd></div>
+                <div><dt>地理数据来源</dt><dd id="d-source">—</dd></div>
+                <div><dt>ISP</dt><dd id="d-isp">—</dd></div>
+                <div><dt>ASN / 组织</dt><dd id="d-network">—</dd></div>
+                <div><dt>地理查询时间</dt><dd id="d-time">—</dd></div>
+              </dl>
+              <p class="hint">
+                ASN / 组织来自现有地理查询；未返回时显示未提供。回显只代表探测请求的出口。
+              </p>
+            </details>
+          </section>
+        </div>
+        <div
+          id="view-identities"
+          role="tabpanel"
+          aria-labelledby="tab-identities"
+          hidden
+        >
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">配置管理</span>
+              <h2>身份管理</h2>
+            </div>
+          </div>
+          <p class="hint">
+            身份保存设备、种子和位置规则；不改变 IP，也不隔离 Cookie
+            或登录账号。
+          </p>
+          <details id="default-identity-details" class="card">
+            <summary>
+              默认身份 <span id="default-identity" class="default-label"></span>
+            </summary>
+            <button id="id-default-clear" class="mini">清除默认身份</button>
+            <p class="hint">
+              没有任何域名绑定时才使用这里的身份；未设置时使用全局基础设置。
+            </p>
+          </details>
+          <section class="card">
+            <div class="section-heading">
+              <h3>编辑身份 <span id="id-state" class="badge">已保存</span></h3>
+              <button id="id-new" class="mini">新建身份</button>
+            </div>
+            <label class="field"
+              >选择要编辑的身份<select id="id-current"></select
+            ></label>
+            <p class="hint">此处选择身份仅用于编辑，不会更改本站绑定。</p>
+            <p id="id-empty" class="notice">新建或选择一个身份后开始编辑。</p>
+            <div id="id-editor" hidden>
+              <p id="id-saved-summary" class="saved-summary"></p>
+              <label class="field"
+                >身份名称<input id="id-label" placeholder="例如：日常浏览"
+              /></label>
+              <label class="field"
+                >设备与指纹处理<select id="id-fp-mode">
+                  <option value="">继承全局开关</option>
+                  <option value="on">启用（仍受全局总开关控制）</option>
+                  <option value="off">仅此身份关闭</option>
+                </select></label
+              >
+              <div class="editor-summary" id="id-device-summary"></div>
+              <label class="field"
+                >系统<select id="id-system">
+                  <option value="">继承全局设备</option>
+                  <option value="macOS">macOS</option>
+                  <option value="Windows">Windows</option>
+                </select></label
+              >
+              <label class="field"
+                >芯片 / 显卡组合<select id="id-profile"></select
+              ></label>
+              <p id="id-device-note" class="hint">
+                芯片按系统筛选；字段变化不会自动保存。
+              </p>
+              <label class="field"
+                >浏览器标识（UA 与 UA-CH）<select id="id-ua-ch">
+                  <option value="">继承全局标识</option>
+                  <option value="native">保留原生</option>
+                  <option value="custom">自定义 · 品牌与系统联动</option>
+                  <option value="profile">整套档案默认值（旧配置）</option>
+                </select></label
+              >
+              <div id="id-ch-fields" hidden>
+                <div class="grid2">
+                  <label class="field"
+                    >浏览器品牌<select id="id-ch-browser">
+                      <option value="chrome">Google Chrome</option>
+                      <option value="edge">Microsoft Edge</option>
+                    </select></label
+                  >
+                  <label class="field"
+                    >平台版本<input
+                      id="id-ch-platform-version"
+                      placeholder="例如 15.1.0"
+                      spellcheck="false"
+                      maxlength="11"
+                  /></label>
+                </div>
+                <details id="id-ch-advanced" class="inset-details">
+                  <summary>关联字段与高级选项</summary>
+                  <div class="grid3">
+                    <label class="field"
+                      >平台<input id="id-ch-platform" readonly /></label
+                    ><label class="field"
+                      >架构<input id="id-ch-architecture" readonly /></label
+                    ><label class="field"
+                      >位数<input id="id-ch-bitness" readonly
+                    /></label>
+                  </div>
+                  <p class="hint">
+                    以上字段随芯片联动。Apple M 为 arm / 64；Intel、AMD 为 x86 /
+                    64。
+                  </p>
+                  <label id="id-ch-wow64-row" class="field"
+                    >Windows 进程兼容（WoW64）<select id="id-ch-wow64">
+                      <option value="false">关闭 · 非 WoW64</option>
+                      <option value="true">开启 · x86-64 上的 32 位进程</option>
+                    </select></label
+                  >
+                  <p class="hint">
+                    macOS 填系统版本；Windows 填 UA-CH 编号，例如
+                    Win10：10.0.0，Win11：15.0.0。
+                  </p>
+                  <p id="id-ch-version" class="hint"></p>
+                  <p class="hint">
+                    品牌及版本列表自动生成。当前均为桌面档案：mobile=false、model=""、formFactors=["Desktop"]。
+                  </p>
+                </details>
+              </div>
+              <p id="id-ch-status" class="hint"></p>
+              <details class="inset-details">
+                <summary>查看生成值与完整说明</summary>
+                <p class="hint">
+                  预览基于编辑框，不代表网页已读取。合成标识不更换实际内核或
+                  GPU。
+                </p>
+                <pre id="id-ch-preview" class="ua-preview"></pre>
+              </details>
+              <label class="field"
+                >时区、语言与坐标<select id="id-geo-mode">
+                  <option value="auto">
+                    自动 · 每个站点跟随自己的探测结果
+                  </option>
+                  <option value="fixed">固定 · 使用下面填写的配置</option>
+                </select></label
+              >
+              <div id="id-fixed-fields" class="grid" hidden>
+                <label
+                  >时区<input
+                    id="id-geo-tz"
+                    placeholder="留空跟随探测" /></label
+                ><label
+                  >语言<input id="id-geo-locale" placeholder="留空跟随探测"
+                /></label>
+                <label
+                  >纬度（−90～90）<input
+                    id="id-geo-lat"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="留空跟随探测" /></label
+                ><label
+                  >经度（−180～180）<input
+                    id="id-geo-lon"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="留空跟随探测"
+                /></label>
+              </div>
+              <p class="hint">
+                全局手动覆盖优先于身份位置。固定模式下，空字段仍跟随探测。
+              </p>
+              <details id="identity-seed-details">
+                <summary>指纹种子与继承详情</summary>
+                <label class="field"
+                  >身份独立种子<input
+                    id="id-seed"
+                    placeholder="留空继承全局种子"
+                    spellcheck="false" /></label
+                ><button id="id-random-seed" class="mini">生成新种子</button>
+                <p class="hint">
+                  种子决定指纹扰动，同设备和内容下保持稳定。生成后需要保存；它不是
+                  IP 或账号容器。
+                </p>
+                <p id="id-inheritance" class="hint"></p>
+                <button id="id-sync" class="mini">设备档案改为继承全局</button>
+              </details>
+              <p id="id-dirty" class="draft" hidden>有未保存的修改</p>
+              <div class="btns">
+                <button id="id-discard">撤销此身份修改</button
+                ><button id="id-apply" class="primary">保存身份修改</button
+                ><button id="id-default">将此身份设为默认</button
+                ><button id="id-del" class="danger">删除身份</button>
+              </div>
+              <p id="id-impact" class="hint"></p>
+            </div>
+          </section>
+        </div>
+        <div
+          id="view-settings"
+          role="tabpanel"
+          aria-labelledby="tab-settings"
+          hidden
+        >
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">全局基础 · 影响所有网站</span>
+            </div>
+          </div>
+
+          <section id="fp-card" class="card">
+            <div class="section-heading">
+              <h3>全局设备与指纹</h3>
+              <span id="fp-state" class="badge">已保存</span>
+            </div>
+            <p id="fp-saved-summary" class="saved-summary"></p>
+            <p
+              id="device-issues"
+              class="notice error-text"
+              role="alert"
+              hidden
+            ></p>
+            <p class="hint">
+              身份未单独指定的字段继承这里。此组修改需要点击保存。
+            </p>
+            <label class="line"
+              ><input id="fp-enabled" type="checkbox" /><span
+                >启用设备与指纹处理（所有身份的总开关）</span
+              ></label
+            >
+
+            <div class="editor-summary" id="fp-device-summary"></div>
+            <label class="field"
+              >系统<select id="fp-system">
+                <option value="macOS">macOS</option>
+                <option value="Windows">Windows</option>
+              </select></label
+            >
+            <label class="field"
+              >芯片 / 显卡组合<select id="fp-profile"></select
+            ></label>
+            <p id="fp-device-note" class="hint">
+              芯片按系统筛选；字段变化不会自动保存。
+            </p>
+            <label class="field"
+              >浏览器标识（UA 与 UA-CH）<select id="fp-ua-ch">
+                <option value="native">保留原生</option>
+                <option value="custom">自定义 · 品牌与系统联动</option>
+                <option value="profile">整套档案默认值（旧配置）</option>
+              </select></label
+            >
+            <div id="fp-ch-fields" hidden>
+              <div class="grid2">
+                <label class="field"
+                  >浏览器品牌<select id="fp-ch-browser">
+                    <option value="chrome">Google Chrome</option>
+                    <option value="edge">Microsoft Edge</option>
+                  </select></label
+                >
+                <label class="field"
+                  >平台版本<input
+                    id="fp-ch-platform-version"
+                    placeholder="例如 15.1.0"
+                    spellcheck="false"
+                    maxlength="11"
+                /></label>
+              </div>
+              <details id="fp-ch-advanced" class="inset-details">
+                <summary>关联字段与高级选项</summary>
+                <div class="grid3">
+                  <label class="field"
+                    >平台<input id="fp-ch-platform" readonly /></label
+                  ><label class="field"
+                    >架构<input id="fp-ch-architecture" readonly /></label
+                  ><label class="field"
+                    >位数<input id="fp-ch-bitness" readonly
+                  /></label>
+                </div>
+                <p class="hint">
+                  以上字段随芯片联动。Apple M 为 arm / 64；Intel、AMD 为 x86 /
+                  64。
+                </p>
+                <label id="fp-ch-wow64-row" class="field"
+                  >Windows 进程兼容（WoW64）<select id="fp-ch-wow64">
+                    <option value="false">关闭 · 非 WoW64</option>
+                    <option value="true">开启 · x86-64 上的 32 位进程</option>
+                  </select></label
+                >
+                <p class="hint">
+                  macOS 填系统版本；Windows 填 UA-CH 编号，例如
+                  Win10：10.0.0，Win11：15.0.0。
+                </p>
+                <p id="fp-ch-version" class="hint"></p>
+                <p class="hint">
+                  品牌及版本列表自动生成。当前均为桌面档案：mobile=false、model=""、formFactors=["Desktop"]。
+                </p>
+              </details>
+            </div>
+            <p id="fp-ch-status" class="hint"></p>
+            <details class="inset-details">
+              <summary>查看生成值与完整说明</summary>
+              <p class="hint">
+                预览基于编辑框，不代表网页已读取。合成标识不更换实际内核或 GPU。
+              </p>
+              <pre id="fp-ch-preview" class="ua-preview"></pre>
+            </details>
+            <details id="global-fp-details">
+              <summary>指纹处理与字体</summary>
+              <label class="field"
+                >全局基础种子<input id="fp-seed" spellcheck="false"
+              /></label>
+              <div class="grid2">
+                <label class="line"
+                  ><input id="fp-canvas" type="checkbox" /><span
+                    >Canvas 扰动</span
+                  ></label
+                ><label class="line"
+                  ><input id="fp-webgl" type="checkbox" /><span
+                    >WebGL 显卡标识</span
+                  ></label
+                ><label class="line"
+                  ><input id="fp-audio" type="checkbox" /><span
+                    >音频频谱扰动</span
+                  ></label
+                ><label class="line"
+                  ><input id="fp-fonts" type="checkbox" /><span
+                    >文字测量扰动（不换字体）</span
+                  ></label
+                >
+              </div>
+              <p class="hint">
+                字体开关只扰动文字宽度测量，不安装或隐藏字体，也不按 IP
+                切换字体库。其他开关仅处理部分读取接口。
+              </p>
+            </details>
+            <p id="fp-dirty" class="draft" hidden>
+              本组修改尚未保存，本站概览仍显示已保存值。
+            </p>
+            <div class="btns editor-actions">
+              <button id="fp-save" class="primary">保存全局设备与指纹</button
+              ><button id="fp-discard">撤销本组修改</button>
+            </div>
+          </section>
+          <details id="startup-details" class="card">
+            <summary>页面启动方式 · 修改即保存</summary>
+            <div class="section-heading">
+              <h3>页面启动方式</h3>
+              <button id="startup-check" class="mini">检查 / 应用</button>
+            </div>
+            <label class="field"
+              >启动模式<select id="startup-mode">
+                <option value="standard">普通 · 加载后异步读取配置</option>
+                <option value="enhanced">
+                  增强 · 在页面脚本前预置已知配置
+                </option>
+              </select></label
+            >
+            <p id="startup-status" class="hint"></p>
+            <p class="hint">
+              增强模式需要浏览器允许用户脚本。普通模式加载早期可能读到系统值，未知出口仍需探测。
+            </p>
+          </details>
+          <details id="network-details" class="card">
+            <summary>接口与网络 · 修改即保存</summary>
+
+            <p class="hint">下列开关修改后立即保存，影响所有身份。</p>
+            <label class="line"
+              ><input id="spoofTimezone" type="checkbox" /><span
+                >覆盖时区与本地日期接口</span
+              ></label
+            ><label class="line"
+              ><input id="spoofGeolocation" type="checkbox" /><span
+                >覆盖网页定位坐标</span
+              ></label
+            ><label class="line"
+              ><input id="spoofLanguage" type="checkbox" /><span
+                >覆盖浏览器语言 navigator.language</span
+              ></label
+            ><label class="line"
+              ><input id="spoofIntlLocale" type="checkbox" /><span
+                >覆盖 Intl 默认格式化语言</span
+              ></label
+            ><label class="line"
+              ><input id="rewriteAcceptLanguage" type="checkbox" /><span
+                >改写语言请求头 Accept-Language</span
+              ></label
+            ><label class="line"
+              ><input id="jitter" type="checkbox" /><span
+                >为定位坐标增加轻微抖动</span
+              ></label
+            ><label class="line"
+              ><input id="blockWebRTC" type="checkbox" /><span
+                >限制 WebRTC 非代理 UDP</span
+              ></label
+            ><label class="line"
+              ><input id="rtcFilter" type="checkbox" /><span
+                >额外过滤 ICE（可能影响音视频通话）</span
+              ></label
+            >
+          </details>
+          <section id="manual-card" class="card">
+            <h3>全局位置覆盖</h3>
+            <p class="hint">
+              最高优先级，覆盖所有身份和站点的同名字段。留空字段按身份与探测配置决定。
+            </p>
+            <p id="manual-status" class="hint"></p>
+            <div class="grid">
+              <label>时区<input id="m-tz" placeholder="留空不覆盖" /></label
+              ><label
+                >语言<input id="m-locale" placeholder="留空不覆盖" /></label
+              ><label
+                >纬度（−90～90）<input
+                  id="m-lat"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="留空不覆盖" /></label
+              ><label
+                >经度（−180～180）<input
+                  id="m-lon"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="留空不覆盖"
+              /></label>
+            </div>
+            <p id="manual-dirty" class="draft" hidden>有未保存的修改</p>
+            <div class="btns">
+              <button id="manual-discard">撤销本组修改</button
+              ><button id="save" class="primary">保存全局位置覆盖</button
+              ><button id="reset">清除所有全局位置覆盖</button>
+            </div>
+          </section>
+          <details class="card">
+            <summary>全局探测结果（本站无结果时备用）</summary>
+            <p class="hint">
+              这是查询公共服务时的出口，不代表每个网站都走这个出口。
+            </p>
+            <dl class="kv-list">
+              <div>
+                <dt>IP</dt>
+                <dd id="s-ip">—</dd>
+              </div>
+              <div>
+                <dt>归属地参考</dt>
+                <dd id="s-loc">—</dd>
+              </div>
+              <div>
+                <dt>时区</dt>
+                <dd id="s-tz">—</dd>
+              </div>
+              <div>
+                <dt>坐标</dt>
+                <dd id="s-coord">—</dd>
+              </div>
+              <div>
+                <dt>ISP</dt>
+                <dd id="s-isp">—</dd>
+              </div>
+              <div>
+                <dt>更新</dt>
+                <dd id="s-time">—</dd>
+              </div>
+              <div>
+                <dt>来源</dt>
+                <dd id="s-src">—</dd>
+              </div>
+            </dl>
+            <button id="refresh">重新探测全局出口</button>
+          </details>
+        </div>
+      </fieldset>
+      <p class="footnote">
+        配置不提供代理或账号隔离；站点仍可读取未覆盖的接口。
+      </p>
+    </main>
+    <footer class="statusbar">
+      <div id="pending-summary" class="pending-summary" hidden>
+        <span id="pending-text"></span
+        ><button id="jump-drafts" class="mini">查看草稿</button>
+      </div>
+      <span id="msg" role="status" aria-live="polite">正在读取配置…</span>
+    </footer>
+    <script src="../shared/config.js"></script>
+    <script src="../shared/ip-types.js"></script>
+    <script src="model.js"></script>
+    <script src="popup.js"></script>
+    <script src="device-editor.js"></script>
+    <script src="drafts.js"></script>
+    <script src="identities.js"></script>
+  </body>
+</html>
