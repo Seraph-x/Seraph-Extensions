@@ -1,170 +1,169 @@
 # GeoMask 2.6.5
 
-按站点配置时区、语言、地理位置和部分设备指纹，用于浏览器环境一致性测试。支持 Chrome / Edge 的 Manifest V3，最低要求 Chrome 135 或具有对应 API 的 Edge。
+Configure time zone, language, geolocation, and some device fingerprints per site, for browser environment consistency testing. Supports Manifest V3 on Chrome / Edge, and requires at least Chrome 135 or Edge with the corresponding APIs.
 
-扩展不提供代理、不改变 IP、不隔离 Cookie，也不保证网站不可检测或账号不关联。
+The extension does not provide a proxy, does not change your IP, does not isolate cookies, and does not guarantee that sites cannot detect it or that accounts are not linked.
 
-当前发布保留本站回显与全局位置优先级，不包含 GoogleVideo、ipify、httpbin 或 AWS 回显试用。原有全局出口探测与 GeoIP 归属地查询仍保留。
+The current release keeps this site's echo and global location priority, and does not include GoogleVideo, ipify, httpbin, or AWS echo trials. The existing global egress probe and GeoIP lookup remain available.
 
-## 2.6.5 指纹接口语义
+## 2.6.5 Fingerprint interface semantics
 
-- 继续使用已有的 `fp.fonts` 文字测量开关，不增加字体枚举、字体允许列表或域名字体绑定，也不修改用户保存的开关。
-- `measureText` 由原生接口验证接收者、缺失参数和 Symbol，并只做一次 WebIDL 字符串转换；返回真实 `TextMetrics`，保留原型、原生 getter 的类型校验和对象属性形状。
-- 原生零宽度保持为零。噪声按原生水平测量结果生成，等价字体回退、空白规范化等得到相同测量值时不会因 CSS 字体名称或输入对象形式不同而出现不同扰动。
-- 宽度与水平左右边界采用同一缩放比例，垂直指标保留原生；结果作为测量时的快照，不随种子或开关变化而改写旧结果。新测量使用新配置。
-- DOM Canvas、OffscreenCanvas 以及已覆盖的 Worker 共用文字测量规则。开启扰动后，数值仍可能与真实字形像素及 DOM 排版不同，不等于统一或隐藏字体环境。
-- 受本次修改的 Canvas、WebGL、音频、设备 getter 和合成 UA-CH 包装保留原生函数目标，因此方法名称、参数数量、不可构造性及已有接收者校验不会因普通 JavaScript 包装函数而改变。原生 UA-CH 模式仍不修改对应描述符。
-- Canvas 导出由原生尺寸 getter 验证对象，MIME 类型转换一次，并在转换副作用之后读取尺寸；原生空画布结果、异步 Blob 回调和跨域画布 SecurityError 保留。克隆、像素读取或编码失败会明确抛出，不静默改为未扰动导出。
-- Float16 像素通道按浮点表示的最低位扰动，保留小数、HDR 及非有限值，避免被 8 位整数运算截断。普通 Uint8ClampedArray 继续采用原有低位扰动。
+- The existing `fp.fonts` text measurement toggle continues to be used; no font enumeration, font allowlist, or per-domain font binding is added, and saved user toggles are not modified.
+- `measureText` validates the receiver, missing arguments, and Symbol through the native interface and performs a single WebIDL string conversion; it returns a real `TextMetrics`, preserving the prototype, native getter type validation, and object property shape.
+- Native zero widths stay zero. Noise is generated from the native horizontal measurement, so equivalent font fallbacks, whitespace normalization, and other cases that produce the same measurement do not yield different perturbation because of a CSS font name or the form of the input object.
+- Width and the horizontal left and right bounds use the same scale factor, and vertical metrics stay native; the result is a snapshot taken at measurement time and is not rewritten by later seed or toggle changes. New measurements use the new configuration.
+- DOM Canvas, OffscreenCanvas, and the covered Worker share the same text measurement rules. With perturbation enabled, values can still differ from real glyph pixels and DOM layout; this is not the same as a uniform or hidden font environment.
+- The Canvas, WebGL, audio, device getter, and synthesized UA-CH wrappers changed here keep native function targets, so method names, argument counts, non-constructibility, and existing receiver validation do not change because of a plain JavaScript wrapper function. Native UA-CH mode still does not modify the corresponding descriptors.
+- Canvas export validates the object with the native size getter, converts the MIME type once, and reads the size after the conversion side effects; native empty-canvas results, asynchronous Blob callbacks, and cross-origin canvas SecurityError are preserved. Clone, pixel-read, or encode failures throw explicitly instead of silently falling back to an unperturbed export.
+- Float16 pixel channels are perturbed at the least significant bit of the floating-point representation, preserving fractions, HDR, and non-finite values so they are not truncated by 8-bit integer arithmetic. Plain Uint8ClampedArray keeps the existing low-bit perturbation.
 
-本次改善的是已处理接口的调用语义，不保证所有像素路径的数值相同：分区读取、色彩空间转换、OffscreenCanvas 导出、其他 realm 和未包装的 Worker 仍存在覆盖限制。Canvas 的画面本身未改变；文字噪声不是字体隔离。测量噪声规则调整后，开启该项时数值可能与旧版不同，刷新页面后统一使用新版运行时。
+This change improves the call semantics of the interfaces it touches and does not guarantee identical values on every pixel path: partitioned reads, color space conversion, OffscreenCanvas export, other realms, and unwrapped Workers still have coverage limits. The Canvas image itself is unchanged; text noise is not font isolation. After the measurement noise rules change, values with that option enabled may differ from earlier versions; after refreshing the page, the new runtime is used uniformly.
 
-## 2.6.4 面板与编辑逻辑
+## 2.6.4 Panel and editing logic
 
-- 首屏按页面状态、核心配置、出口结果、身份绑定和 Worker 设置排列。设备 / 浏览器 / 指纹、连接说明及探测证据折叠展示；身份与绑定目录继续保留在身份管理底部。
-- 状态摘要分别标明页面是否连接、Worker 使用模式、本站出口是否回显。未确认状态用提示色展示；当前操作失败仍显示具体错误，不将已注册脚本等同于页面生效。
-- 本站 Worker 修改保留为按完整域名区分的弹窗草稿。检查状态、切换面板或保存其他设置不会覆盖选择；支持保存与撤销，并纳入未保存数量。关闭面板会丢弃草稿，与其他编辑组一致。
-- 上次后台失败保留在带时间的独立记录中，不再显示为本次操作失败；原始错误仍可展开查看。当前保存、探测和刷新失败继续明确反馈。
-- 工具栏弹窗仍为 420 × 600 CSS 像素，只有内容区滚动。本次不修改指纹、探测和权限处理规则。
+- The first screen is ordered by page state, core configuration, egress results, identity binding, and Worker settings. Device / browser / fingerprint, connection notes, and probe evidence are collapsed; the identity and binding directory stays at the bottom of identity management.
+- The status summary separately indicates whether the page is connected, which Worker mode is in use, and whether this site's egress is echoed. Unconfirmed states use a warning color; a failure of the current operation still shows the specific error, and a registered script is not equated with an effective page.
+- Changes to this site's Worker are kept as a popup draft keyed by full domain. Checking status, switching panels, or saving other settings does not overwrite the selection; saving and discarding are supported, and the draft counts toward the unsaved total. Closing the panel discards the draft, consistent with other edit groups.
+- The last background failure is kept in a separate timestamped record and is no longer shown as a failure of the current operation; the original error can still be expanded. Failures of the current save, probe, and refresh continue to be reported explicitly.
+- The toolbar popup is still 420 × 600 CSS pixels, and only the content area scrolls. This release does not change fingerprint, probe, or permission handling rules.
 
-## 2.6.3 页面连接与兼容诊断
+## 2.6.3 Page connection and compatibility diagnostics
 
-- 本站概览新增页面连接检查：区分桥接缺失、运行时未连接、配置等待回执、应用失败、旧版本和当前版本已回执。注册状态不等于页面生效；回执只代表顶层运行时报告，不证明站点采集结果或所有 Worker 覆盖。
-- 「刷新此页并检查」只刷新原标签页，确认文档已更换，再等待最多 8 秒获取新文档的当前版本回执；仍失败时显示具体原因，不重复注入旧页面、不自动刷新其他标签页。
-- Worker 新增按完整 hostname 保存的模式：自动处理，或直接使用原生。对 GitHub 等禁止 Blob 的站点选择原生并刷新，可跳过扩展 Blob 包装，避免该包装产生的重复 CSP 日志；Worker 内保留原生时区、语言和指纹。选回自动可恢复此前行为，不继承至子域。页面与请求头继续按各自设置处理，网站自身的 CSP 错误不会被隐藏。
-- 本站探测分别说明 HTTP 401/403、404、429、超时、无效回显、重定向和通用网络错误。重定向不跟随；网络错误不伪装成已确认的 CORS / DNS / TLS 原因。Chrome 商店明确显示不支持，跳过回显请求。
-- 沿用现有全局位置备用逻辑；备用 IP 不作为本站出口，不增加代理、回显服务、交叉验证或调试权限。
+- The this-site overview adds a page connection check that distinguishes a missing bridge, a runtime that is not connected, configuration awaiting a receipt, application failure, an old version, and a receipt from the current version. Registration state does not mean the page is effective; a receipt only represents a report from the top-level runtime and does not prove what the site collected or that all Workers are covered.
+- "Refresh this page and check" only refreshes the original tab, confirms that the document has been replaced, and then waits up to 8 seconds for the current-version receipt of the new document; if it still fails, the specific reason is shown, the old page is not re-injected, and other tabs are not refreshed automatically.
+- Worker adds a mode saved by full hostname: handle automatically, or use native directly. On sites that forbid Blob, such as GitHub, choosing native and refreshing skips the extension's Blob wrapper and avoids the repeated CSP logs that wrapper produces; the Worker keeps the native time zone, language, and fingerprints internally. Switching back to automatic restores the previous behavior and is not inherited by subdomains. Pages and request headers continue to be handled by their own settings, and the site's own CSP errors are not hidden.
+- Probes for this site separately explain HTTP 401/403, 404, 429, timeout, invalid echo, redirect, and generic network errors. Redirects are not followed; network errors are not disguised as confirmed CORS / DNS / TLS causes. The Chrome Web Store is explicitly reported as unsupported and the echo request is skipped.
+- The existing global location fallback logic is kept; the fallback IP is not treated as this site's egress, and no proxy, echo service, cross-validation, or debug permission is added.
 
-## 安装与更新
+## Install and update
 
-1. 下载并解压仓库，保留整个 `GeoMask` 文件夹。
-2. Chrome 打开 `chrome://extensions/`，Edge 打开 `edge://extensions/`。
-3. 开启「开发者模式」，点击「加载已解压的扩展程序」，选择本目录（含 `manifest.json`）。
-4. 打开扩展面板查看本站配置，按需设置身份、时区、语言与设备字段。
-5. 更新时在同一目录替换文件，点击扩展卡片的「重新加载」，再刷新网页。
+1. Download and unpack the repository, keeping the whole `GeoMask` folder.
+2. Open `chrome://extensions/` in Chrome, or `edge://extensions/` in Edge.
+3. Turn on "Developer mode", click "Load unpacked", and select this directory (which contains `manifest.json`).
+4. Open the extension panel to view this site's configuration, and set identity, time zone, language, and device fields as needed.
+5. To update, replace the files in the same directory, click "Reload" on the extension card, then refresh the page.
 
-此目录已包含全部运行文件，无需安装 Node.js、依赖或执行构建。更换安装目录可能改变已解压扩展的 ID，并使原有配置无法直接沿用。
+This directory already contains all runtime files; no Node.js, dependencies, or build step are needed. Changing the install directory may change the ID of the unpacked extension and make the existing configuration unusable.
 
-## 面板怎么用
+## How to use the panel
 
-| 页面 | 用途 | 保存方式 |
+| Page | Purpose | How it saves |
 | --- | --- | --- |
-| 本站概览 | 查看本站身份、时区、语言、坐标、设备及每项来源；查看出口探测证据和 ASN / 组织 | 域名绑定需点击保存；重新探测立即执行 |
-| 身份管理 | 查看身份及全部域名绑定，编辑独立配置、设置默认身份、解除绑定或删除身份 | 编辑后点击「保存身份修改」；选择身份只是切换编辑对象 |
-| 全局设置 | 设置各身份继承的设备、指纹处理、手动位置和启动方式 | 设备与位置需保存；接口与网络开关即时保存 |
+| This-site overview | See this site's identity, time zone, language, coordinates, device, and the source of each; see egress probe evidence and ASN / organization | Domain bindings require clicking save; reprobing runs immediately |
+| Identity management | See identities and all domain bindings, edit an individual configuration, set the default identity, unbind, or delete an identity | Click "Save identity changes" after editing; selecting an identity only switches the edit target |
+| Global settings | Set the device, fingerprint handling, manual location, and startup mode that each identity inherits | Device and location need saving; interface and network switches save immediately |
 
-未保存修改会显示草稿标记，关闭弹窗后草稿不保留。配置保存后刷新网页，使页面脚本、请求头和新建 Worker 使用同一配置。身份只是按域名选择设置，同一浏览器中的 Cookie 与登录状态仍共享。
+Unsaved changes show a draft marker, and drafts are not kept after the popup closes. After saving configuration, refresh the page so the page script, request headers, and newly created Workers all use the same configuration. An identity only selects settings by domain; cookies and login state in the same browser are still shared.
 
-## 网站请求定位时
+## When a site requests geolocation
 
-2.6.2 改为遵循 Chrome 的真实定位授权。开启「全局设置 → 授权后使用 GeoMask 定位坐标」后：
+2.6.2 changed this to follow Chrome's real geolocation permission. After enabling "Global settings → Use GeoMask coordinates after permission":
 
-| 状态 | 网页收到的结果 |
+| State | What the page receives |
 | --- | --- |
-| Chrome 已允许，且有完整配置坐标 | GeoMask 配置坐标，按开关应用轻微抖动 |
-| Chrome 尚未决定 | 触发浏览器原生定位授权流程；等待选择 |
-| 用户拒绝、撤销授权或网站 Permissions-Policy 禁止定位 | 定位被拒绝，不返回坐标 |
-| 没有完整配置坐标 | 位置不可用，不回退浏览器真实位置 |
-| 关闭定位处理或暂停扩展 | 恢复原生定位；浏览器授权后可能返回真实位置 |
+| Chrome has allowed, and complete configured coordinates exist | GeoMask configured coordinates, with slight jitter applied according to the switch |
+| Chrome has not decided yet | The browser's native geolocation permission flow is triggered; waiting for a choice |
+| The user denies, revokes permission, or the site's Permissions-Policy forbids geolocation | Geolocation is denied and no coordinates are returned |
+| No complete configured coordinates | Position unavailable; does not fall back to the browser's real location |
+| Geolocation handling turned off or the extension paused | Native geolocation is restored; real location may be returned after browser permission |
 
-定位权限查询保留真实的 PermissionStatus 和变化事件，不再伪造 granted。等待授权使用可取消的原生定位监听；网页持续定位也会在取消或撤销授权后停止返回配置位置。切换模式后，旧原生定位回调不会继续交付真实坐标。
+Permission queries keep the real PermissionStatus and change events and no longer fake granted. Waiting for permission uses a cancellable native geolocation watch; a page that keeps requesting location also stops receiving configured positions after cancellation or revocation. After switching modes, old native location callbacks do not continue to deliver real coordinates.
 
-原生授权流程可能调用操作系统和浏览器的定位服务，GeoMask 不读取、保存或转发其回调中的位置数据。返回网页的位置对象仍由扩展构造，不保证与原生对象不可区分，也没有完整模拟硬件定位及全部 PositionOptions 行为。
+The native permission flow may call the operating system's and browser's location services; GeoMask does not read, store, or forward location data from their callbacks. The position object returned to the page is still constructed by the extension, is not guaranteed to be indistinguishable from a native object, and does not fully emulate hardware geolocation or all PositionOptions behavior.
 
-轻微抖动约为几十米以内；它不提供受控噪声的数学隐私保证。切换抖动开关会更新缓存，网页修改某次返回对象不影响后续结果。
+Slight jitter is on the order of tens of meters or less; it does not provide the mathematical privacy guarantees of controlled noise. Toggling jitter updates the cache, and a page modifying one returned object does not affect later results.
 
-普通启动在配置异步到达前仍可能保留原生行为，增强启动用于减少窗口；更新后请重新加载扩展并刷新网页，已返回的位置无法撤回。面板中的坐标是预期配置，不是网页实际读取结果的证明。
+Regular startup may still keep native behavior before configuration arrives asynchronously; enhanced startup is meant to reduce that window. After updating, reload the extension and refresh the page; positions already returned cannot be retracted. Coordinates in the panel are the intended configuration, not proof of what the page actually read.
 
-## 查看域名绑定与删除身份
+## Viewing domain bindings and deleting identities
 
-身份管理先显示编辑表单，身份与域名清单位于页面最底部，顶部「身份与绑定」入口可直接跳转，页底可返回编辑。清单列出每个身份的全部显式绑定域名，并标记「默认」「本站配置」和「正在编辑」；按身份名称或域名筛选只改变显示，不改配置。点击「编辑」跳到配置表单，选择身份不会改变网站绑定。
+Identity management shows the edit form first, with identities and the domain list at the very bottom of the page; the "Identities and bindings" entry at the top jumps there directly, and the bottom of the page returns to editing. The list shows every explicitly bound domain of each identity and marks "default", "this site configuration", and "being edited"; filtering by identity name or domain only changes what is displayed and does not change configuration. Clicking "Edit" jumps to the configuration form; selecting an identity does not change site bindings.
 
-「按域名查看」按域名展示对应身份，并显示解除后的继承结果。子域继承父域，更具体的绑定优先；解除一个绑定后仍可能使用父域身份或默认身份。默认身份不等于显式域名绑定，列表也不是实际访问记录。
+"View by domain" shows the corresponding identity for each domain and the inherited result after unbinding. Subdomains inherit from parent domains, and more specific bindings take precedence; after unbinding one, a parent-domain identity or the default identity may still apply. The default identity is not the same as an explicit domain binding, and the list is not a record of actual visits.
 
-身份列表每项和编辑区顶部均有删除入口。删除前会展示身份名称、将解除的全部显式域名，以及默认身份和未保存草稿的影响；点击取消不会写入，点击「确认删除身份」才会删除。只删除所选身份、它的域名绑定和匹配的默认选择，其他身份及其草稿保留。删除身份不会清除 Cookie 或退出账号。
+Each identity in the list and the top of the edit area have a delete entry. Before deleting, the identity name, all explicit domains that will be unbound, and the effect on the default identity and unsaved drafts are shown; clicking cancel writes nothing, and only clicking "Confirm delete identity" deletes. Only the selected identity, its domain bindings, and the matching default selection are deleted; other identities and their drafts remain. Deleting an identity does not clear cookies or sign out of accounts.
 
-三个标签页会在本次弹窗打开期间保留各自滚动位置。新建身份后自动选中名称，取消删除会回到原操作位置。保存栏只保存身份配置；绑定网站需在「本站概览」操作。
+The three tabs keep their own scroll positions while the popup stays open. After creating an identity, its name is selected automatically; cancelling a delete returns to the previous position. The save bar saves identity configuration only; binding sites is done in "This-site overview".
 
-## 时区、位置与出口
+## Time zone, location, and egress
 
-导航时，扩展尝试向目标站点的 `https://{host}/cdn-cgi/trace` 读取探测请求的出口 IP，再查询地理数据库以获得时区、国家和大致坐标；语言按国家推导。
+On navigation, the extension tries to read the egress IP of the probe request from `https://{host}/cdn-cgi/trace` on the target site, then queries a geographic database for the time zone, country, and approximate coordinates; language is derived from the country.
 
-2.6.0 在「全局设置 → 全局位置与优先级」提供两种选择，默认最低：
+2.6.0 offers two choices under "Global settings → Global location and priority", with lowest as the default:
 
-| 选择 | 优先级（从高到低） |
+| Choice | Priority (high to low) |
 | --- | --- |
-| 最低 · 默认位置 | 身份固定位置 → 本站可用地理结果 → 全局手动默认位置 → 全局探测结果 |
-| 最高 · 覆盖位置 | 全局手动位置 → 身份固定位置 → 本站可用地理结果 → 全局探测结果 |
+| Lowest · default location | Identity fixed location → this site's usable geographic result → global manual default location → global probe result |
+| Highest · override location | Global manual location → identity fixed location → this site's usable geographic result → global probe result |
 
-时区、语言、纬度、经度分别继承，留空继续取下一来源，数值 0 有效。本站只有 IP 而没有地理结果时，也使用已填写的默认位置，但不会将它标为该 IP 的实际归属地。最新探测失败后保留的历史位置低于手动默认位置；没有手动默认时仍保留历史配置并标注来源。
+Time zone, language, latitude, and longitude are inherited separately; an empty value falls through to the next source, and a numeric 0 is valid. When this site has only an IP and no geographic result, the filled-in default location is also used, but it is not labeled as that IP's actual home location. A historical location kept after the latest probe failure ranks below the manual default; without a manual default, the historical configuration is kept and its source is labeled.
 
-2.6.1 中，最高 / 最低分别保存一套时区、语言、纬度和经度。选择要编辑的组后，显示对应的已保存位置或该组草稿；面板分别标明当前启用组和正在编辑组。点击「保存此组位置」或「保存并启用此组」才生效，保存一组不会覆盖另一组的值或草稿。撤销只丢弃当前组草稿并回到已启用组，其他组草稿保留；关闭弹窗不保留未保存草稿。
+In 2.6.1, highest / lowest each store their own time zone, language, latitude, and longitude. After selecting the group to edit, the corresponding saved location or that group's draft is shown; the panel marks the currently enabled group and the group being edited separately. Only clicking "Save this group's location" or "Save and enable this group" takes effect, and saving one group does not overwrite the other group's values or draft. Discarding drops only the current group's draft and returns to the enabled group, while other groups' drafts remain. Closing the popup does not keep unsaved drafts.
 
-「清除此组位置」只清当前查看组的位置，不切换启用优先级，也不清另一组。旧位置保留在原启用组下，另一组初始为空，不自动复制；两组互不借用位置，某组为空时按该组的优先级规则继承身份 / 探测结果。
+"Clear this group's location" clears only the location of the group currently being viewed; it does not switch the enabled priority and does not clear the other group. The old location stays under the previously enabled group, the other group starts empty and is not copied automatically; the two groups never borrow each other's locations, and when a group is empty it inherits identity / probe results according to that group's priority rules.
 
-页面、请求头、增强启动与面板来源使用相同合并规则，保存后请刷新网页。旧配置缺少优先级字段时仍按最低模式解释。全局手动位置不改变 IP、ASN 或实际网络出口。
+Pages, request headers, enhanced startup, and panel sources use the same merge rules; refresh the page after saving. Old configurations without a priority field are still interpreted as lowest mode. The global manual location does not change the IP, ASN, or actual network egress.
 
-第三方回显只能确认访问该服务时的出口。即使服务与本站属于同一云厂商，代理仍可能按域名、目标 IP 或协议分流，因此不能将第三方回显自动标为本站真实出口。当前版本不增加第三方回显备用端点，也不自动推断站点共用分流。
+Third-party echoes can only confirm the egress used when reaching that service. Even when the service and the target site belong to the same cloud provider, a proxy may still route by domain, destination IP, or protocol, so a third-party echo cannot automatically be labeled as this site's real egress. The current version does not add fallback third-party echo endpoints and does not automatically infer that sites share routing.
 
-默认端点是 [Cloudflare 的 /cdn-cgi/trace](https://developers.cloudflare.com/fundamentals/reference/cdn-cgi-endpoint/)，不是每个站点都有的通用 IP 查询接口。同一分流下，某些站点仍可能返回 401 / 403 或 404，无法取得回显。没有本站回显，扩展无法直接确认该站点看到的客户端出口 IP；服务器 IP 不能代替客户端出口。
+The default endpoint is [Cloudflare's /cdn-cgi/trace](https://developers.cloudflare.com/fundamentals/reference/cdn-cgi-endpoint/), which is not a generic IP lookup interface available on every site. Under the same routing, some sites may still return 401 / 403 or 404, so no echo can be obtained. Without this site's echo, the extension cannot directly confirm the client egress IP that the site sees; a server IP cannot stand in for client egress.
 
-面板明确区分「本站回显」与「全局参考」。2.5.2 在探测卡片直接显示 HTTP 状态、无效回显、超时和网络失败；尝试时间、原始错误及端点位于折叠区。失败不再显示绿色成功提示。IP 已回显但地理查询失败时，两者分别说明；没有全局结果时保留旧配置并标明历史来源，保存最新诊断且不更新旧数据时间；完全没有配置则返回具体错误。回显只代表该探测请求，URL 路径分流、IPv4 / IPv6、重定向及代理策略都可能导致它与页面其他请求的出口不同。全局备用结果不能确认本站实际出口。此次更新修正诊断与提示，不扩大可回显站点的覆盖范围。
+The panel clearly separates "this site's echo" from "global reference". 2.5.2 shows the HTTP status, invalid echo, timeout, and network failure directly on the probe card; the attempt time, raw error, and endpoint are in a collapsed area. Failures no longer show a green success indicator. When the IP is echoed but the geographic lookup fails, the two are explained separately; with no global result, the old configuration is kept and labeled with a historical source, the latest diagnostics are saved without updating the old data timestamp; with no configuration at all, a specific error is returned. An echo only represents that probe request; URL path routing, IPv4 / IPv6, redirects, and proxy policy can all make it differ from the egress of other requests from the page. A global fallback result cannot confirm this site's actual egress. This update corrects diagnostics and messages; it does not widen the coverage of sites that can be echoed.
 
-ASN、组织和 ISP 使用现有地理查询返回的数据，缺失时显示「未提供」；不会为这些字段增加请求。本站回显 IP 与备用地理数据 IP 不同时，不借用备用 IP 的 ASN / ISP。2.4.1 已移除 IP 类型、评分、住宅和代理 / VPN / Tor 标记，不查询 Net.Coffee，也不做多来源交叉验证；旧版情报缓存不再读取或展示。
+ASN, organization, and ISP use data returned by the existing geographic lookup and show "not provided" when missing; no additional request is made for these fields. When this site's echoed IP differs from the fallback geographic IP, the fallback IP's ASN / ISP is not borrowed. 2.4.1 removed IP type, score, residential, and proxy / VPN / Tor markers; it does not query Net.Coffee and does not cross-validate multiple sources; old intelligence caches are no longer read or displayed.
 
-## 设备与指纹
+## Device and fingerprint
 
-- 可选择 Mac 的 Apple M / Intel 档案和 Windows 的 Intel / AMD 档案；系统、芯片、浏览器品牌与 UA-CH 字段联动校验。
-- 「保留原生」同时保留传统 UA 和 UA-CH；选择自定义或整套档案时，两者按所选品牌与系统联动，Chromium 版本使用真实浏览器原生 UA 所报告的版本。
-- Canvas、WebGL 标识、音频频谱和文字测量可作确定性处理；相同种子保持结果稳定，身份可单独设置种子。
-- 字体处理只影响文字测量，不安装或隐藏字体，也不随 IP 更换真实字体库。
-- WebRTC 非代理 UDP 限制可独立控制；额外 ICE 过滤可能影响通话。
+- Mac Apple M / Intel profiles and Windows Intel / AMD profiles can be selected; system, chip, browser brand, and UA-CH fields are cross-validated.
+- "Keep native" preserves both the legacy UA and UA-CH; when a custom profile or a full profile set is chosen, the two are linked to the selected brand and system, and the Chromium version uses the version reported by the real browser's native UA.
+- Canvas, WebGL identifiers, audio spectrum, and text measurement can be handled deterministically; the same seed keeps results stable, and each identity can have its own seed.
+- Font handling only affects text measurement; it does not install or hide fonts, and does not swap the real font library per IP.
+- The WebRTC non-proxied UDP restriction can be controlled independently; extra ICE filtering may affect calls.
 
-这些处理没有更换真实 GPU、浏览器内核、字体或 TLS 能力；接口覆盖有限，仍可能出现可检测的差异。
+These treatments do not replace the real GPU, browser engine, fonts, or TLS capabilities; interface coverage is limited and detectable differences may remain.
 
-## Worker 模式与 CSP 自动兼容
+## Worker mode and automatic CSP compatibility
 
-「本站概览 → Worker 兼容状态」可按完整域名保存「自动处理」或「直接使用原生」。原生模式刷新后直接使用原始入口，不创建扩展的 Blob 包装，可避免该包装引发的重复 CSP 日志；不继承至子域。检查状态或保存其他设置不会覆盖未保存的选择，关闭弹窗会丢弃草稿。
+"This-site overview → Worker compatibility status" can save "handle automatically" or "use native directly" per full domain. In native mode, the original entry point is used directly after a refresh without creating the extension's Blob wrapper, avoiding the repeated CSP logs that wrapper causes; it is not inherited by subdomains. Checking status or saving other settings does not overwrite an unsaved selection, and closing the popup discards the draft.
 
+"Interface and network → Use the native entry point automatically when a Worker is blocked by CSP" is on by default. When the browser explicitly reports that the site's enforced CSP forbids blob Workers, the extension switches to the original entry point; later Workers on the same page use the original entry point directly, and the site's CSP is not modified.
 
-默认开启「接口与网络 → Worker 被 CSP 拦截时自动使用原生入口」。浏览器明确报告网站的强制 CSP 禁止 blob Worker 时，扩展改用原始入口；同一页面后续 Worker 直接使用原始入口，不修改网站 CSP。
+A Worker switched automatically keeps the browser's native time zone, language, and fingerprints, while pages and request headers are still handled per configuration. The first CSP block may still appear in the extension's error records; if the native entry point is also blocked by CSP it still fails, and ordinary script and network errors do not trigger a retry.
 
-自动切换的 Worker 内部时区、语言和指纹保持浏览器原生值，页面与请求头仍按配置处理。首次 CSP 拦截可能仍出现在扩展错误记录中；原生入口也被 CSP 阻止时仍会失败，普通脚本和网络错误不会触发重试。
+See "This-site overview → Worker compatibility status" for the switch report of the current top-level page, and click "Check current page" to read it again; the report only states that the native entry point was chosen, not that the Worker started successfully, and the situation of subframes / child Workers must be checked in their own consoles. The state is not cached across pages and is explicitly shown as unavailable when it cannot be read. Turning off automatic compatibility and refreshing the page restores the previous strict behavior.
 
-在「本站概览 → Worker 兼容状态」查看当前顶层页面的切换报告，点击「检查当前页面」重新读取；报告只说明选用了原生入口，不代表 Worker 已启动成功，子 frame / 子 Worker 的情况需查看其控制台。状态不跨页面缓存，无法读取时会明确显示不可用。关闭自动兼容并刷新网页，可恢复原有严格行为。
+The switch preserves the original Worker object and message order, and transferable objects are detached at call time; forwarded events are synthesized, so `isTrusted` is not equivalent to the original Worker, and borrowing `Worker.prototype` methods directly is outside the instance forwarding coverage. A created Worker does not hot-update with settings; refresh the page after changing settings.
 
-切换时保留原 Worker 对象和消息顺序，传输对象在调用时分离；转发事件为合成事件，`isTrusted` 与原始 Worker 不等价，直接借用 `Worker.prototype` 方法不在实例转发覆盖范围内。创建后的 Worker 不随设置热更新，修改设置后请刷新网页。
+## Enabling enhanced startup
 
-## 启用增强启动
+Regular mode needs to obtain configuration asynchronously, so the page's earliest scripts may read native values first. Enhanced mode preloads known configuration into the HTTP/S page startup script, reducing that window.
 
-普通模式需要异步取得配置，页面最早脚本可能先读到原生值。增强模式将已知配置预置到 HTTP/S 页面启动脚本，减少这个时间窗口。
+1. On Chrome 138+ enable "Allow user scripts" in the extension details; on Chrome 135–137 keep Developer mode on for the extensions page. Edge needs the corresponding permission support.
+2. In the panel's "Page startup protection", choose "Enhanced · preload startup configuration".
+3. Confirm that "Enhanced startup registered" is shown, then refresh the page; click "Check / Apply" if necessary.
 
-1. Chrome 138+ 在扩展详情开启「允许用户脚本」；Chrome 135–137 保持扩展页的开发者模式开启。Edge 需具备对应权限支持。
-2. 在面板的「页面启动保护」选择「增强 · 预置启动配置」。
-3. 确认显示「增强启动已注册」，再刷新网页；必要时点击「检查 / 应用」。
+Failures of permissions, registration, or cleanup show an error. Enhanced startup does not guarantee that there is no configuration gap across all frames, unknown egress, extension updates, or browser restarts.
 
-权限、注册或清理失败会显示错误。增强启动不保证所有 frame、未知出口、扩展更新或浏览器重启期间都没有配置空窗。
+## Permissions and data
 
-## 权限与数据
-
-| 权限 | 用途 |
+| Permission | Purpose |
 | --- | --- |
-| 所有站点访问 | 在网页和 frame 安装 API 钩子，执行出口探测 |
-| storage / alarms | 保存配置与缓存，定时刷新 |
-| tabs / webNavigation | 识别当前站点和导航 |
-| scripting / userScripts | 注册普通及增强启动脚本 |
-| declarativeNetRequestWithHostAccess | 改写语言及所选 UA / UA-CH 请求头 |
-| privacy | 控制 WebRTC 非代理 UDP 策略 |
+| Access to all sites | Installs API hooks in pages and frames and performs egress probes |
+| storage / alarms | Saves configuration and caches, and refreshes on a schedule |
+| tabs / webNavigation | Identifies the current site and navigation |
+| scripting / userScripts | Registers regular and enhanced startup scripts |
+| declarativeNetRequestWithHostAccess | Rewrites language and the selected UA / UA-CH request headers |
+| privacy | Controls the WebRTC non-proxied UDP policy |
 
-出口和地理探测会联系目标站点，以及 `ipwho.is`、`ipapi.co`、`ifconfig.co`、`api.ip.sb`、`freeipapi.com` 中的可用服务；失败时按既有顺序尝试备用来源，不交叉比较。这些服务会看到请求出口和被查询的 IP。没有自建遥测或账号上传接口，不下载执行远程代码。身份、设置与缓存保存在扩展本地存储。
+Egress and geographic probes contact the target site and the available services among `ipwho.is`, `ipapi.co`, `ifconfig.co`, `api.ip.sb`, and `freeipapi.com`; on failure, fallback sources are tried in the existing order without cross-comparison. These services see the request egress and the IP being queried. There is no self-hosted telemetry or account upload endpoint, and no remote code is downloaded or executed. Identities, settings, and caches are stored in the extension's local storage.
 
-## 错误与限制
+## Errors and limitations
 
-- 探测失败、字段校验错误和权限应用失败会在面板显示；更详细的信息见扩展的 service worker 控制台。
-- 全局探测全部失败时保留此前结果供查看，并明确报告失败，不将旧数据称为新探测成功。
-- 总开关关闭后停止自动探测并释放扩展策略；用户仍可手动重新探测。
-- 部分 Worker、跨来源 frame、页面 CSP 和最早执行的网页代码无法完整覆盖。网站已经采集的信息及已发送的请求无法撤回。
+- Probe failures, field validation errors, and permission application failures are shown in the panel; more detailed information is in the extension's service worker console.
+- When all global probes fail, previous results are kept for viewing and the failure is reported explicitly; old data is not called a successful new probe.
+- After the master switch is turned off, automatic probing stops and extension policies are released; the user can still probe manually.
+- Some Workers, cross-origin frames, page CSP, and the earliest-executing page code cannot be fully covered. Information the site has already collected and requests already sent cannot be retracted.
 
-## 文件组成
+## File composition
 
-`manifest.json`、`background.js`、`background/`、`content/`、`shared/`、`popup/`、`icons/` 为运行文件，本 README 为安装和使用说明。开发依赖、测试、构建脚本、截图、日志和图标原稿均未包含在此目录。
+`manifest.json`, `background.js`, `background/`, `content/`, `shared/`, `popup/`, and `icons/` are runtime files, and this README is the installation and usage guide. Development dependencies, tests, build scripts, screenshots, logs, and original icon artwork are not included in this directory.

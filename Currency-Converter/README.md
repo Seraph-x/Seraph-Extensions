@@ -1,76 +1,76 @@
-# 货币自动换算 · Currency Converter
+# Automatic currency conversion · Currency Converter
 
-自动识别网页中的货币金额，按获取到的汇率换算为指定币种，支持替换原文、追加结果和悬停查看。
+Automatically detects currency amounts on pages, converts them to a chosen currency at the fetched exchange rate, and supports replacing the original text, appending the result, and hover inspection.
 
-当前版本 **1.1.5**，采用 Manifest V3，适用于 Chrome、Edge 等支持该扩展格式的浏览器。默认启用，目标货币为 **CNY**，显示方式为**替换原文**。本目录可直接加载，无需安装依赖或执行构建。
+Current version **1.1.5**, Manifest V3, for Chrome, Edge, and other browsers that support this extension format. Enabled by default, target currency **CNY**, display mode **Replace original text**. This directory loads directly; no dependencies or build step required.
 
-## 安装与更新
+## Install and update
 
-1. Chrome 打开 `chrome://extensions/`；Edge 打开 `edge://extensions/`。
-2. 开启右上角的**开发者模式**。
-3. 点击**加载已解压的扩展程序**，选择当前 `Currency-Converter/` 目录，也就是包含 [manifest.json](manifest.json) 的目录。
-4. 打开或刷新目标网页，等待汇率加载及页面扫描完成。
-5. 点击工具栏中的扩展图标，设置目标货币和显示方式；可在浏览器扩展菜单中将图标固定到工具栏。
+1. Open `chrome://extensions/` in Chrome; open `edge://extensions/` in Edge.
+2. Turn on **Developer mode** in the top-right corner.
+3. Click **Load unpacked** and select the current `Currency-Converter/` directory — the one containing [manifest.json](manifest.json).
+4. Open or refresh the target page and wait for the rates to load and the page scan to finish.
+5. Click the extension icon in the toolbar to set the target currency and display mode; you can pin the icon to the toolbar from the browser's extensions menu.
 
-更新或修改文件后，在扩展管理页点击该扩展的**重新加载／刷新**，再刷新目标网页。
+After updating or changing files, click **Reload / Refresh** for the extension on the extensions page, then refresh the target page.
 
-## 查看换算结果
+## Viewing conversion results
 
-扩展会自动扫描网页文本，并监听新增内容和价格变化。默认跳过已经使用目标货币的金额。
+The extension scans page text automatically and watches for newly added content and price changes. Amounts already in the target currency are skipped by default.
 
-| 显示方式 | 页面效果 | 适用场景 |
+| Display mode | Page effect | When to use |
 | --- | --- | --- |
-| 替换原文（默认） | `$100` → `¥724.00` | 直接阅读换算后的价格 |
-| 原文 + 换算 | `$100 (¥724.00)` | 同时核对原价和结果 |
-| 仅悬停提示 | 保留 `$100`，鼠标移上去显示换算卡片 | 保留原有金额的显示 |
+| Replace original text (default) | `$100` → `¥724.00` | Read converted prices directly |
+| Original + conversion | `$100 (¥724.00)` | Check the original price and the result together |
+| Hover only | Keeps `$100` and shows a conversion card on hover | Keep the original amounts on display |
 
-以上仅用于说明显示效果，假设 `1 USD = 7.24 CNY` 且原价识别为 USD；实际结果取决于数据源、缓存、币种判断和小数位设置。
+The above only illustrates the display effect, assuming `1 USD = 7.24 CNY` and that the original amount is recognized as USD; actual results depend on the data source, cache, currency detection, and decimal settings.
 
-鼠标悬停在处理过的金额上，可以查看原价、源币种、换算结果、目标币种、本次汇率与数据源。追加模式会在原价后放置结果标签，并将原价内部空格替换为不换行空格，减少金额从中间折行的情况。
+Hovering over a processed amount shows the original price, source currency, conversion result, target currency, the rate used, and the data source. Append mode places a result label after the original price and replaces spaces inside the original with non-breaking spaces, so amounts are less likely to wrap in the middle.
 
-### 使用工具栏弹窗
+### Using the toolbar popup
 
-弹窗顶部显示当前域名，底部显示当前页面的运行状态或已换算数量。设置和操作集中在弹窗中。
+The top of the popup shows the current domain, and the bottom shows the page's run state or the number of converted amounts. Settings and actions are all in the popup.
 
-| 操作 | 效果 |
+| Action | Effect |
 | --- | --- |
-| 顶部启用开关 | 全局启用或停用换算；停用时还原已处理的金额 |
-| 重新扫描 | 按当前设置重新处理页面，恢复手动还原后暂停的扫描 |
-| 还原原文 | 恢复当前页面原始金额并暂停自动重扫，不修改全局启用状态 |
-| 刷新汇率 | 强制重新获取汇率，并重新处理当前页面 |
-| 恢复默认设置 | 恢复默认配置并重新处理当前页面 |
-| 清空汇率缓存 | 清空缓存后立即重新获取汇率，并重新处理当前页面 |
-| 诊断 | 显示当前页面的设置、运行状态、汇率信息和扫描统计 |
+| Enable switch at the top | Enables or disables conversion globally; disabling restores processed amounts |
+| Rescan | Reprocesses the page with the current settings and resumes scanning paused by a manual restore |
+| Restore original | Restores the original amounts on the current page and pauses automatic rescanning, without changing the global enabled state |
+| Refresh rates | Forces a rate refetch and reprocesses the current page |
+| Restore default settings | Restores the default configuration and reprocesses the current page |
+| Clear rate cache | Clears the cache, immediately refetches rates, and reprocesses the current page |
+| Diagnostics | Shows the current page's settings, run state, rate information, and scan statistics |
 
-设置会保存到浏览器的扩展同步存储，其他已打开且运行内容脚本的页面也会接收设置变化。若只想停用某个网站，请使用黑名单；顶部开关控制所有网站。
+Settings are saved to the browser's extension sync storage, and other open pages running the content script also receive the setting changes. To disable a single site, use the blocklist; the top switch controls all sites.
 
-## 调整设置
+## Adjusting settings
 
-### 基本设置
+### Basic settings
 
-| 设置 | 默认值 | 说明 |
+| Setting | Default | Notes |
 | --- | --- | --- |
-| 启用换算 | 开启 | 控制扩展是否执行金额换算 |
-| 目标货币 | CNY | 从内置币种列表选择；实际可换算币种取决于当前汇率源是否提供对应汇率 |
-| 显示方式 | 替换原文 | 可改为原文 + 换算、仅悬停提示 |
-| 小数位 | 自动 | 结果绝对值达到 1000 时取整，否则保留 2 位；也可指定 0～4 位 |
-| 输出样式 | 符号 | 弹窗提供符号、代码、符号 + 代码三个选项，当前页面输出限制见下文 |
+| Enable conversion | On | Controls whether the extension converts amounts |
+| Target currency | CNY | Chosen from the built-in currency list; which currencies can actually be converted depends on whether the current rate source provides them |
+| Display mode | Replace original text | Can be changed to Original + conversion or Hover only |
+| Decimal places | Auto | Rounds when the absolute result reaches 1000, otherwise keeps 2 decimals; 0–4 can also be specified |
+| Output style | Symbol | The popup offers symbol, code, and symbol + code; see below for the current page output limitation |
 
-### 高级设置
+### Advanced settings
 
-| 设置 | 默认值 | 说明 |
+| Setting | Default | Notes |
 | --- | --- | --- |
-| 生效范围 | 所有网站都换算 | 可改为仅白名单网站 |
-| 黑名单 | 空 | 每行一个域名或 URL，匹配的网站不换算 |
-| 白名单 | 空 | 仅在生效范围设为「仅白名单网站」时使用 |
-| 汇率缓存时间 | 6 小时 | 可选 1、6、12、24 小时；「每次打开都刷新」选项的当前限制见下文 |
-| 高亮换算后的金额 | 开启 | 为已处理金额添加浅色高亮 |
-| 同币种也标记 | 关闭 | 开启后也处理原币种与目标币种相同的金额 |
-| 无符号数字按指定币种换算 | 关闭，预设 USD | 界面提供币种选择，当前纯数字识别限制见下文 |
+| Scope | Convert on all sites | Can be changed to whitelisted sites only |
+| Blocklist | Empty | One domain or URL per line; matching sites are not converted |
+| Whitelist | Empty | Used only when the scope is set to "Whitelisted sites only" |
+| Rate cache duration | 6 hours | 1, 6, 12, or 24 hours; see below for the current limitation of the "Refresh on every open" option |
+| Highlight converted amounts | On | Adds a light highlight to processed amounts |
+| Mark same-currency amounts too | Off | When on, also processes amounts whose source currency matches the target currency |
+| Convert unsigned numbers as the specified currency | Off, preset USD | The UI offers a currency selector; see below for the current limitation on plain-number detection |
 
-### 配置网站名单
+### Configuring site lists
 
-每行填写一条规则。例如：
+Enter one rule per line. For example:
 
 ```text
 example.com
@@ -78,86 +78,86 @@ example.com
 https://store.example.net/products
 ```
 
-- `example.com` 匹配该域名及其子域名。
-- `*.shop.example.org` 匹配其子域名，不匹配 `shop.example.org` 本身。
-- 完整 URL 仅按主机名匹配，路径不参与判断；上例匹配 `store.example.net`。
-- 黑名单优先于白名单。选择「仅白名单网站」且白名单为空时，所有网站均不换算。
+- `example.com` matches that domain and its subdomains.
+- `*.shop.example.org` matches its subdomains, not `shop.example.org` itself.
+- A full URL is matched by hostname only; the path does not participate, so the example above matches `store.example.net`.
+- The blocklist takes precedence over the whitelist. With "Whitelisted sites only" selected and an empty whitelist, no site is converted.
 
-## 金额识别范围
+## Amount detection coverage
 
-内置 **93 种货币、188 个通用符号写法**，并按页面语言及域名补充部分地区专用符号。
+Built in: **93 currencies and 188 common symbol forms**, plus region-specific symbols added according to page language and domain.
 
-| 类型 | 示例 |
+| Type | Examples |
 | --- | --- |
-| 货币符号 | `$100`、`€49.99`、`Rp 6.175`、`249.000₫` |
-| 币种代码在前或在后 | `USD 120`、`120 USD`、`$7.19 USD` |
-| 不同地区的数字格式 | `1,234.56`、`1.234,56`、`1 234,56`、`1'234.56` |
-| 中文数量单位 | `¥18万`、`CNY 3.5亿` |
-| 紧贴数字的英文数量缩写 | `$10k`、`USD 2.5m`、`EUR 1bn` |
+| Currency symbols | `$100`, `€49.99`, `Rp 6.175`, `249.000₫` |
+| Currency codes before or after the amount | `USD 120`, `120 USD`, `$7.19 USD` |
+| Number formats from different regions | `1,234.56`, `1.234,56`, `1 234,56`, `1'234.56` |
+| Chinese magnitude units | `¥18万`, `CNY 3.5亿` |
+| English magnitude abbreviations attached to numbers | `$10k`, `USD 2.5m`, `EUR 1bn` |
 
-`¥`、`$` 等共用符号会结合页面语言、地区信息及部分排版特征判断币种；符号旁附有明确币种代码时通常以代码为准。判断仍可能存在歧义，可以通过悬停卡片核对源币种。
+Shared symbols such as `¥` and `$` are resolved using page language, region information, and some typographic cues; when an explicit currency code sits next to the symbol, the code usually wins. Ambiguity can still remain, so check the source currency in the hover card.
 
-默认跳过代码块、输入框、可编辑区域、常见代码编辑器和公式区域。图片、Canvas 中的金额不属于可扫描的文本。
+Code blocks, input fields, editable regions, common code editors, and formula areas are skipped by default. Amounts inside images and Canvas are not scannable text.
 
-## 汇率与缓存
+## Rates and caching
 
-后台按以下顺序尝试代码中配置的数据源，前一个失败后再请求下一个：
+The background worker tries the data sources configured in the code in the following order, requesting the next one only after the previous one fails:
 
-1. currency-api 的 jsDelivr 地址。
-2. currency-api 的 Cloudflare Pages 镜像。
-3. `open.er-api.com`。
-4. `frankfurter.app`。
+1. The jsDelivr address for currency-api.
+2. The Cloudflare Pages mirror of currency-api.
+3. `open.er-api.com`.
+4. `frankfurter.app`.
 
-汇率统一以 USD 为基准，币种间按交叉汇率换算。默认使用 6 小时内的缓存；缓存到期或手动刷新时重新获取。所有数据源均失败且存在旧缓存时，继续使用旧缓存，并在弹窗汇率行标注「缓存」。没有可用汇率时无法完成换算。
+All rates are based on USD, and cross rates are used between currencies. Cached rates from the last 6 hours are used by default; they are refetched when the cache expires or on a manual refresh. If every data source fails and an old cache exists, the old cache continues to be used and the popup rate row is marked "cached". Conversion cannot be completed without a usable rate.
 
-弹窗汇率行会显示 `1 USD` 对目标货币的汇率、获取时间和数据源。获取时间表示本地拉取时间，不代表行情更新时间；汇率也不包含支付平台手续费或结算差价。
+The popup rate row shows the rate for `1 USD` against the target currency, the fetch time, and the data source. The fetch time is when the data was pulled locally and does not represent when the market rate was updated; rates also exclude payment platform fees and settlement spreads.
 
-## 常见问题与当前限制
+## FAQ and current limitations
 
-**安装后没有换算结果。** 刷新目标网页，再查看弹窗底部状态。确认扩展已启用、网站未被名单排除、汇率已获取，且页面包含可识别的金额。原币种与目标币种相同时，默认会跳过。
+**No conversion results after installing.** Refresh the target page and check the status at the bottom of the popup. Confirm the extension is enabled, the site is not excluded by the lists, rates have been fetched, and the page contains recognizable amounts. Amounts already in the target currency are skipped by default.
 
-**提示「本页没有运行」。** 安装或重新加载扩展后，需要刷新已打开的网页。浏览器内部页、扩展管理页等受限页面无法正常注入内容脚本；本地文件页面需要在扩展详情中允许访问文件网址。
+**"Not running on this page" is shown.** After installing or reloading the extension, open pages must be refreshed. Browser-internal pages, extension management pages, and other restricted pages cannot have the content script injected normally; local file pages require allowing access to file URLs in the extension details.
 
-**修改名单或重新启用后仍无反应。** 若页面初次加载时就被停用或被名单排除，内容脚本会跳过引擎初始化。调整设置后刷新页面，让引擎重新启动。
+**Still nothing after changing the lists or re-enabling.** If the page was disabled or excluded by the lists when it first loaded, the content script skips engine initialization. Adjust the settings and refresh the page so the engine starts again.
 
-**汇率获取失败或显示「缓存」。** 检查网络后点击「刷新汇率」；也可以在高级设置中清空缓存并重新获取。不同数据源提供的币种范围可能不同，缺少任一币种的汇率时，该金额不会换算。
+**Rate fetching fails or "cached" is shown.** Check the network and click "Refresh rates"; you can also clear the cache and refetch in advanced settings. Different data sources cover different currency sets, and an amount is not converted when any required currency rate is missing.
 
-**点击「还原原文」后不再自动换算。** 这是当前页的暂停状态，点击「重新扫描」可恢复。若希望持续停用，请关闭顶部开关，或把网站加入黑名单。
+**Automatic conversion stops after clicking "Restore original".** That is a pause state for the current page; click "Rescan" to resume. To keep it disabled, turn off the top switch or add the site to the blocklist.
 
-**更改输出样式后，页面仍显示货币符号。** 当前版本会保存该选项，但页面识别逻辑未将 `symbolStyle` 传入格式化函数，页面结果仍使用默认符号样式。
+**The page still shows the currency symbol after changing the output style.** The current version saves that option, but the page detection logic does not pass `symbolStyle` to the formatting function, so page results still use the default symbol style.
 
-**选择「每次打开都刷新」后仍使用缓存。** 该选项保存为 `0`，当前后台会将其按默认 6 小时处理。需要立即更新时请点击「刷新汇率」。
+**"Refresh on every open" still uses the cache.** That option is stored as `0`, which the background currently treats as the default 6 hours. Click "Refresh rates" to update immediately.
 
-**启用无符号数字换算后，纯数字仍未变化。** 当前识别函数在处理无符号匹配前就跳过了这类结果，因此该选项尚未实际生效。
+**Plain numbers still do not change after enabling unsigned conversion.** The current detection function skips such results before handling unsigned matches, so the option does not take effect yet.
 
-此外，当前版本仅处理顶层页面，不扫描 iframe 内部或 Shadow DOM 内部的文本。替换和追加显示会修改页面 DOM，部分依赖精确文本或节点结构的网站可能出现兼容问题，可切换为仅悬停提示，或将网站加入黑名单。
+In addition, the current version only processes the top-level page and does not scan text inside iframes or Shadow DOM. Replace and append display modes modify the page DOM, so sites that depend on exact text or node structure may run into compatibility issues; switch to Hover only, or add the site to the blocklist.
 
-## 权限与数据
+## Permissions and data
 
-| 权限或存储 | 用途 |
+| Permission or storage | Purpose |
 | --- | --- |
-| `storage` | 保存设置、汇率缓存和高级设置的展开状态 |
-| `activeTab` | 配合弹窗获取当前活动标签页并与内容脚本通信 |
-| `<all_urls>` | 在允许的网页中注入扫描脚本，并向汇率源发起请求 |
-| `chrome.storage.sync` | 保存换算设置；可随浏览器账号的同步配置同步 |
-| `chrome.storage.local` | 保存汇率缓存及弹窗界面状态 |
+| `storage` | Saves settings, the rate cache, and the expanded state of advanced settings |
+| `activeTab` | Works with the popup to get the active tab and communicate with the content script |
+| `<all_urls>` | Injects the scan script into allowed pages and makes requests to rate sources |
+| `chrome.storage.sync` | Stores conversion settings; can sync with the browser account's sync configuration |
+| `chrome.storage.local` | Stores the rate cache and popup UI state |
 
-金额识别与换算在浏览器内完成。当前扩展代码的外部请求用于获取汇率，不上传页面文本或已识别金额，也无需配置 API Key。弹窗使用 `fonts/` 中的本地字体。
+Amount detection and conversion happen in the browser. The extension's external requests are used to fetch rates; page text and recognized amounts are not uploaded, and no API key needs to be configured. The popup uses the local fonts in `fonts/`.
 
-## 目录结构
+## Directory structure
 
 ```text
 Currency-Converter/
-├── manifest.json          扩展声明、权限、内容脚本加载顺序
-├── background.js          后台汇率请求、缓存与消息处理
-├── content.js             页面初始化、设置同步和换算调度
-├── popup.html             工具栏弹窗结构
-├── popup.css              弹窗样式及本地字体声明
-├── popup.js               弹窗设置、操作与运行状态
-├── lib/                   金额识别、默认配置、汇率、消息协调及页面界面模块
-├── icons/                 扩展图标
-├── fonts/                 本地字体
+├── manifest.json          Extension declaration, permissions, content script load order
+├── background.js          Background rate requests, caching, and message handling
+├── content.js             Page initialization, settings sync, and conversion scheduling
+├── popup.html             Toolbar popup structure
+├── popup.css              Popup styles and local font declarations
+├── popup.js               Popup settings, actions, and run state
+├── lib/                   Amount detection, default configuration, rates, message coordination, and page UI modules
+├── icons/                 Extension icons
+├── fonts/                 Local fonts
 └── README.md
 ```
 
-换算核心位于 [lib/core.js](lib/core.js)，页面扫描与还原位于 [lib/engine.js](lib/engine.js)，汇率源和缓存策略位于 [lib/rates.js](lib/rates.js)，默认配置与网站匹配规则位于 [lib/defaults.js](lib/defaults.js)。
+The conversion core is in [lib/core.js](lib/core.js), page scanning and restoration in [lib/engine.js](lib/engine.js), rate sources and cache policy in [lib/rates.js](lib/rates.js), and default configuration and site matching rules in [lib/defaults.js](lib/defaults.js).

@@ -1,96 +1,96 @@
-# Session Sniffer · 页面会话数据查看与导出
+# Session Sniffer · Page session data inspection and export
 
-查看当前标签页的 Cookies（含 HttpOnly）、localStorage、sessionStorage 和 document.cookie，支持复制 Cookie 头、导出 JSON，以及枚举浏览器 API 可访问的 Cookie。
+Inspect the current tab's Cookies (including HttpOnly), localStorage, sessionStorage, and document.cookie; copy a Cookie header, export JSON, and enumerate cookies accessible through browser APIs.
 
-当前版本 **1.0.0**，采用 Manifest V3，可在 Chrome、Edge 等支持所需扩展 API 的浏览器中加载。本目录无需安装依赖或执行构建。
+Current version **1.0.0**, Manifest V3, loadable in Chrome, Edge, and other browsers that support the required extension APIs. This directory needs no dependencies or build step.
 
-![浅色界面](preview-light.png)
-![深色界面](preview-dark.png)
+![Light interface](preview-light.png)
+![Dark interface](preview-dark.png)
 
-## 安装与采集
+## Install and capture
 
-1. Chrome 打开 `chrome://extensions/`；Edge 打开 `edge://extensions/`。
-2. 开启**开发者模式**，点击**加载已解压的扩展程序**。
-3. 选择当前 `Session-Sniffer/` 目录，即包含 [manifest.json](manifest.json) 的目录。
-4. 打开目标网站，点击工具栏中的扩展图标，等待采集完成。
-5. 页面登录态或存储变化后，点击弹窗中的**刷新**重新采集。
+1. Open `chrome://extensions/` in Chrome; open `edge://extensions/` in Edge.
+2. Turn on **Developer mode**, then click **Load unpacked**.
+3. Select the current `Session-Sniffer/` directory — the one containing [manifest.json](manifest.json).
+4. Open the target site, click the extension icon in the toolbar, and wait for the capture to finish.
+5. After the page's login state or storage changes, click **Refresh** in the popup to capture again.
 
-更新文件后，在扩展管理页重新加载扩展，重新打开弹窗；页面侧脚本需要刷新网页后更新。
+After updating files, reload the extension on the extensions page and reopen the popup; the page-side script updates after refreshing the page.
 
-## 查看采集数据
+## Viewing captured data
 
-| 页签 | 内容 | 范围 |
+| Tab | Content | Scope |
 | --- | --- | --- |
-| Cookies | 名称、值、域名、路径及 HttpOnly、Secure、SameSite、分区等标记 | 初次采集使用 chrome.cookies.getAll({ url }) 返回的 Cookie |
-| localStorage | 存储键值 | 当前标签页顶层文档 |
-| sessionStorage | 存储键值 | 当前标签页顶层文档 |
-| 原始 | JSON 数据 | 当前页采集快照，不随表格筛选或全库扫描变化 |
+| Cookies | Name, value, domain, path, and flags such as HttpOnly, Secure, SameSite, and partition | The initial capture uses the cookies returned by chrome.cookies.getAll({ url }) |
+| localStorage | Stored key/value pairs | Top-level document of the current tab |
+| sessionStorage | Stored key/value pairs | Top-level document of the current tab |
+| Raw | JSON data | The current page capture snapshot; does not change with table filtering or the full-store scan |
 
-Cookie 通过浏览器扩展 API 读取，可以包含 HttpOnly 数据；document.cookie 只包含页面脚本可读取的部分。Web Storage 使用注入到顶层页面主世界的函数读取，不采集 iframe 内部数据。
+Cookies are read through the browser extension API and can include HttpOnly data; document.cookie only contains what page scripts can read. Web Storage is read by a function injected into the main world of the top-level page; data inside iframes is not captured.
 
-### 表格筛选与全库扫描
+### Table filtering and the full-store scan
 
-- 过滤框按 Cookie 的名称、域名、路径和值进行不区分大小写的子串匹配。
-- **只看 Partitioned**仅在表格中保留带 partitionKey 的条目。
-- **全库扫描**调用 chrome.cookies.getAll({})，将 Cookie 表格的数据源切换为该调用返回的集合；localStorage、sessionStorage 和原始快照保持当前页采集结果。
-- 点击**刷新**会退出全库视图并重新采集当前页。
+- The filter box does case-insensitive substring matching on cookie name, domain, path, and value.
+- **Partitioned only** keeps only entries with a partitionKey in the table.
+- **Full-store scan** calls chrome.cookies.getAll({}) and switches the cookie table's data source to the set returned by that call; localStorage, sessionStorage, and the raw snapshot keep the current page capture.
+- Clicking **Refresh** exits the full-store view and captures the current page again.
 
-「全库」表示本次 API 调用不按当前 URL 限定，不代表已显式遍历所有独立 Cookie store 或所有分区上下文。
+"Full store" means this API call is not limited by the current URL; it does not mean every separate cookie store or every partitioned context has been explicitly enumerated.
 
-| 排序选项 | 当前规则 |
+| Sort option | Current rule |
 | --- | --- |
-| 发送顺序 | path 较长的在前，长度相同时 domain 较长的在前 |
-| 域名+名称 | 按 domain、name 字典序排列 |
-| 原始 | 保留当前数据源已有顺序；采集和全库扫描阶段已做过域名相关排序 |
+| Send order | Longer path first; when lengths are equal, longer domain first |
+| Domain + name | Sorted lexicographically by domain, then name |
+| Raw | Keeps the existing order of the current data source; domain-related sorting was already done during capture and the full-store scan |
 
-「发送顺序」是当前实现的近似规则，不保证与浏览器请求中的实际 Cookie 顺序一致。
+"Send order" is an approximate rule of the current implementation and is not guaranteed to match the actual cookie order in browser requests.
 
-## 复制与导出
+## Copy and export
 
-不同按钮使用的数据范围不同，**表格中看到的条目不一定等于导出的条目**。
+Different buttons use different data ranges, so **the entries you see in the table are not necessarily the entries that get exported**.
 
-| 操作 | 输出 | 当前使用的数据 |
+| Action | Output | Data currently used |
 | --- | --- | --- |
-| 复制 JSON | 当前页快照 JSON | 当前页采集结果，不受表格筛选或全库扫描影响 |
-| 复制 Cookie 头 | name=value; name2=value2 | 全库扫描结果（如有），否则为当前页 Cookie；可按发送条件过滤，但不使用文本搜索和 Partitioned 表格筛选 |
-| 复制 Netscape | 制表符分隔的 cookie.txt 内容 | 当前页 Cookie，不使用全库扫描结果或表格筛选 |
-| 导出 JSON | session_域名_时间戳.json，弹出保存对话框 | 与复制 JSON 相同的当前页快照 |
-| 存快照 | 写入扩展本地存储 | 当前页快照；覆盖上一次保存内容 |
+| Copy JSON | Current page snapshot JSON | The current page capture, unaffected by table filtering or the full-store scan |
+| Copy Cookie header | name=value; name2=value2 | The full-store scan result if any, otherwise the current page cookies; can be filtered by send conditions, but does not use the text search or the Partitioned table filter |
+| Copy Netscape | Tab-separated cookie.txt content | Current page cookies; does not use the full-store scan result or table filters |
+| Export JSON | session_domain_timestamp.json, with a save dialog | The same current page snapshot as Copy JSON |
+| Save snapshot | Writes to extension local storage | The current page snapshot; overwrites the previously saved content |
 
-JSON 包含 capturedAt、url、origin、cookies、localStorage、sessionStorage 和 documentCookie。当前界面没有载入历史快照、快照列表、导入或恢复登录态的按钮；需要保留多次采集结果时，请分别导出 JSON。
+The JSON contains capturedAt, url, origin, cookies, localStorage, sessionStorage, and documentCookie. The current interface has no buttons for loading historical snapshots, listing snapshots, importing, or restoring a login state; export separate JSON files when you need to keep multiple capture results.
 
-Netscape 格式适用于支持 cookie.txt 的工具，不是 Puppeteer 可直接使用的 JSON，也不能完整保留 SameSite、Partition key 等扩展字段。需要 Puppeteer 格式时，可使用下文的命令行转换工具。
+The Netscape format works with tools that support cookie.txt; it is not JSON that Puppeteer can use directly, and it cannot fully preserve extended fields such as SameSite and Partition key. For the Puppeteer format, use the command-line conversion tool described below.
 
-## 按目标请求条件复制 Cookie 头
+## Copying a Cookie header for target request conditions
 
-1. 先采集当前页；目标接口位于其他路径或子域名时，可先点击**全库扫描**扩大候选范围。
-2. 填写**目标 URL**；留空时使用当前采集页面的 URL。
-3. 填写**顶层站点**；留空时使用当前页 origin。
-4. 选择 HTTP 方法，并按实际场景设置**顶层导航**。
-5. 保持**只发本页可见**勾选，点击**复制 Cookie 头**。
+1. Capture the current page first; if the target API is on another path or subdomain, click **Full-store scan** first to widen the candidate range.
+2. Fill in the **Target URL**; when left empty, the URL of the currently captured page is used.
+3. Fill in the **Top-level site**; when left empty, the current page origin is used.
+4. Choose the HTTP method and set **Top-level navigation** according to the actual scenario.
+5. Keep **Only send cookies visible to this page** checked and click **Copy Cookie header**.
 
-当前过滤函数检查 HTTPS/Secure、过期时间、域名、路径、SameSite、分区键以及 __Host- / __Secure- 前缀约束。取消「只发本页可见」后，复制头会使用当前候选集合中的全部 Cookie。
+The current filter function checks HTTPS/Secure, expiry time, domain, path, SameSite, partition key, and the __Host- / __Secure- prefix constraints. After unchecking "Only send cookies visible to this page", the copied header uses all cookies in the current candidate set.
 
-**这是一份根据输入条件计算的候选头，不是浏览器真实请求的抓包结果。** 扩展没有监听网络请求；目标 URL 输入只参与过滤，不会自动发起请求或重新采集该 URL 的 Cookie。当前「只发本页可见」也只控制复制 Cookie 头，未应用于表格、JSON 或 Netscape 输出。
+**This is a candidate header computed from the input conditions, not a packet capture of what the browser actually sent.** The extension does not monitor network requests; the target URL input only participates in filtering and does not automatically make a request or re-capture cookies for that URL. The current "Only send cookies visible to this page" option also only controls the copied Cookie header and is not applied to the table, JSON, or Netscape output.
 
-### 过滤的当前限制
+### Current filtering limitations
 
-- 域名判断未使用 Cookie 的 hostOnly 字段，可能把只属于某个主机的 Cookie 纳入子域名请求。
-- SameSite 分支直接比较 None / Lax / Strict，未统一浏览器返回值的命名和大小写，跨站过滤可能不准确。
-- 同站判断使用内置的有限后缀表，并未完整处理协议差异及浏览器的其他发送策略。
-- 无法根据创建时间复现未显式声明 SameSite 的新 Cookie 的临时发送例外；排序也没有使用创建时间。
-- 分区键只按顶层可注册域近似比较，无法覆盖全部分区及第三方 Cookie 策略。
-- 非法目标 URL 会使过滤函数返回未过滤集合，请使用有效的完整 HTTP(S) URL。
+- Domain checks do not use the cookie's hostOnly field and may include a cookie that belongs only to a specific host in a subdomain request.
+- The SameSite branch compares None / Lax / Strict directly without normalizing the naming and casing of browser return values, so cross-site filtering may be inaccurate.
+- Same-site checks use a built-in limited suffix table and do not fully handle protocol differences or the browser's other sending policies.
+- It cannot reproduce, from the creation time, the temporary sending exception for new cookies that do not explicitly declare SameSite; sorting also does not use the creation time.
+- Partition keys are compared approximately by top-level registrable domain and cannot cover all partitions and third-party cookie policies.
+- An invalid target URL makes the filter function return the unfiltered set; use a valid full HTTP(S) URL.
 
-需要确认某次请求实际携带哪些 Cookie 时，应以浏览器 Network 面板中的请求为准。
+To confirm which cookies a specific request actually carried, rely on the request in the browser's Network panel.
 
-## 本地命令行工具
+## Local command-line tools
 
-目录中保留两个独立脚本，需要本机有 Node.js。以下命令在 `Session-Sniffer/` 中运行，dump.json、before.json 和 after.json 均指从弹窗导出的实际 JSON 文件。
+Two standalone scripts are kept in the directory and require Node.js on the machine. The commands below run inside `Session-Sniffer/`; dump.json, before.json, and after.json all refer to actual JSON files exported from the popup.
 
-### 查找候选登录 Cookie 与转换格式
+### Finding candidate login cookies and converting formats
 
-[auth-detect.mjs](auth-detect.mjs) 支持：
+[auth-detect.mjs](auth-detect.mjs) supports:
 
 ```bash
 node auth-detect.mjs list dump.json
@@ -100,74 +100,74 @@ node auth-detect.mjs puppeteer dump.json
 node auth-detect.mjs diff before.json after.json
 ```
 
-- list 按名称、HttpOnly、Secure、值长度和形态等特征列出候选。
-- curl 和 header 优先使用评分达到阈值的候选；没有候选时使用输入文件中的全部 Cookie，不执行弹窗里的目标发送过滤。
-- puppeteer 将输入 Cookie 转为对应的 JSON 字段。
-- diff 按 domain、path、name 对比，找出新增或值发生变化的条目，不比较所有属性和分区上下文。
+- list ranks candidates by features such as name, HttpOnly, Secure, value length, and shape.
+- curl and header prefer candidates whose score reaches the threshold; when there are no candidates they use all cookies in the input file and do not apply the target send filtering from the popup.
+- puppeteer converts the input cookies into the corresponding JSON fields.
+- diff compares by domain, path, and name to find added entries or entries whose value changed; it does not compare all attributes and partition contexts.
 
-登录前后差异和评分只是定位线索，不能单凭某项变化确认其就是登录凭据。脚本生成命令或格式化数据，本身不发起登录或请求。
+Differences before and after login and the scores are only leads for locating credentials; a single change alone cannot confirm that an item is the login credential. The scripts generate commands or format data and do not themselves sign in or make requests.
 
-### 查看打包 Cookie 的字节结构
+### Inspecting the byte structure of a packed cookie
 
-[decode-cookie.js](decode-cookie.js) 可将冒号分隔的打包值按 Base64URL 解码，并尝试显示 protobuf wire-format 字段：
+[decode-cookie.js](decode-cookie.js) can Base64URL-decode a colon-separated packed value and try to display protobuf wire-format fields:
 
 ```bash
 node decode-cookie.js --from-json dump.json COMPASS
 ```
 
-将 COMPASS 换成输入文件中实际存在的 Cookie 名称。该工具不持有站点的 protobuf schema，也不保证能解释所有字段含义或所有 Cookie 格式。
+Replace COMPASS with a cookie name that actually exists in the input file. The tool does not hold the site's protobuf schema and does not guarantee that it can explain every field's meaning or every cookie format.
 
-## 常见问题
+## FAQ
 
-**localStorage 或 sessionStorage 为空。** 页面可能本来未写入数据，也可能受到注入权限或页面环境限制。当前只读取顶层文档，不读取 IndexedDB、Cache Storage 或 iframe 存储。
+**localStorage or sessionStorage is empty.** The page may simply not have written data, or injection permissions or the page environment may limit it. Only the top-level document is read; IndexedDB, Cache Storage, and iframe storage are not read.
 
-**全库扫描后 JSON 里的 Cookie 数量没增加。** 全库结果仅供表格和复制 Cookie 头使用；JSON、Netscape 及存快照仍使用当前页采集数据。
+**The cookie count in the JSON did not increase after a full-store scan.** Full-store results are only used for the table and the copied Cookie header; JSON, Netscape, and save snapshot still use the current page capture.
 
-**改变目标 URL 或勾选「只发本页可见」后，表格数量不变。** 当前发送过滤仅应用于复制 Cookie 头，表格由搜索框和 Partitioned 条件筛选。
+**The table count does not change after changing the target URL or checking "Only send cookies visible to this page".** The current send filtering applies only to copying the Cookie header; the table is filtered by the search box and the Partitioned condition.
 
-**显示采集完成，但数据似乎不完整。** 当前页只按 URL 获取 Cookie，受权限及 Cookie store 范围影响；受限页面也可能无法注入。完成状态只表示采集流程结束，不保证每类数据都成功读取。
+**The capture reports complete, but the data looks incomplete.** The current page only fetches cookies by URL, subject to permissions and the cookie store scope; restricted pages may also block injection. The complete status only means the capture flow finished and does not guarantee that every data type was read successfully.
 
-浏览器内部页、扩展商店及其他禁止注入的页面不能正常读取页面存储。当前没有 Cookie 编辑、导入或自动恢复登录态的功能。
+Browser-internal pages, extension stores, and other pages that forbid injection cannot have page storage read normally. There is currently no cookie editing, importing, or automatic login restoration.
 
-## 主题与补充文档
+## Theme and additional docs
 
-顶部主题按钮依次切换**跟随系统 → 浅色 → 深色**，选择保存在扩展本地存储。界面使用 fonts/ 中的本地字体。
+The theme button at the top cycles **Follow system → Light → Dark**, and the choice is saved in extension local storage. The interface uses the local fonts in fonts/.
 
-[preview.html](preview.html) 是可直接打开的静态界面预览，使用示例数据，不进行真实采集；支持 theme=light / dark 和 tab=cookies / local / session / raw 查询参数。
+[preview.html](preview.html) is a static interface preview you can open directly; it uses sample data and performs no real capture. It supports the theme=light / dark and tab=cookies / local / session / raw query parameters.
 
-| 文档 | 内容 |
+| Doc | Content |
 | --- | --- |
-| [COOKIE-BASICS.md](COOKIE-BASICS.md) | Cookie 属性、用途及与其他存储的比较 |
-| [COOKIE-VS-SESSION.md](COOKIE-VS-SESSION.md) | Cookie 与服务端会话的关系 |
-| [AUTH-COOKIE.md](AUTH-COOKIE.md) | 通过登录前后快照差异辅助定位凭据 |
-| [THEME.md](THEME.md) | 字体、色板、布局及图标说明 |
+| [COOKIE-BASICS.md](COOKIE-BASICS.md) | Cookie attributes, purposes, and comparison with other storage |
+| [COOKIE-VS-SESSION.md](COOKIE-VS-SESSION.md) | The relationship between cookies and server-side sessions |
+| [AUTH-COOKIE.md](AUTH-COOKIE.md) | Using snapshot differences before and after login to help locate credentials |
+| [THEME.md](THEME.md) | Notes on fonts, color palette, layout, and icons |
 
-## 权限与数据
+## Permissions and data
 
-| 权限 | 用途 |
+| Permission | Purpose |
 | --- | --- |
-| cookies / `<all_urls>` | 读取授权范围内的 Cookie，支持不按当前 URL 限定的枚举 |
-| tabs / activeTab | 获取当前标签页及其 URL |
-| scripting | 注入函数读取顶层页面的 Web Storage 与 document.cookie |
-| storage | 保存最近一次快照和主题偏好 |
-| downloads | 将 JSON 保存为本地文件 |
+| cookies / `<all_urls>` | Reads cookies within the authorized scope and supports enumeration not limited by the current URL |
+| tabs / activeTab | Gets the current tab and its URL |
+| scripting | Injects a function to read the top-level page's Web Storage and document.cookie |
+| storage | Saves the most recent snapshot and theme preference |
+| downloads | Saves JSON as a local file |
 
-当前扩展及命令行脚本没有远程上传或主动网络请求。复制结果进入系统剪贴板，导出数据写入所选文件，保存快照写入 chrome.storage.local。数据中可能包含当前会话凭据，应仅在自己拥有或获授权的账号和环境中使用。
+The current extension and command-line scripts make no remote uploads or active network requests. Copied results go to the system clipboard, exported data is written to the chosen file, and saved snapshots are written to chrome.storage.local. The data may contain credentials for the current session and should be used only with accounts and environments that you own or are authorized to use.
 
-## 目录结构
+## Directory structure
 
 ```text
 Session-Sniffer/
 ├── manifest.json
-├── background.js          Cookie 读取、主世界存储采集和本地快照保存
-├── content.js             PING_STORAGE 消息通道，当前弹窗采集流程未调用
+├── background.js          Cookie reading, main-world storage capture, and local snapshot saving
+├── content.js             PING_STORAGE message channel; the current popup capture flow does not call it
 ├── popup.html / popup.css / popup.js
-├── auth-detect.mjs         Cookie 评分、差分和格式转换
-├── decode-cookie.js        打包值的字节结构分析
-├── preview.html           静态界面预览
+├── auth-detect.mjs        Cookie scoring, diffing, and format conversion
+├── decode-cookie.js       Byte structure analysis of packed values
+├── preview.html           Static interface preview
 ├── preview-light.png / preview-dark.png
-├── fonts/                 本地字体
-├── icons/                 扩展图标及文档配图
+├── fonts/                 Local fonts
+├── icons/                 Extension icons and documentation images
 ├── COOKIE-BASICS.md / COOKIE-VS-SESSION.md / AUTH-COOKIE.md / THEME.md
 └── README.md
 ```
