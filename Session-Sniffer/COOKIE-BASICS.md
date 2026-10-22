@@ -1,139 +1,139 @@
-# Cookie 是什么，干什么用
+# What a cookie is, and what it is for
 
-## 一、为什么会有 cookie
+## 1. Why cookies exist
 
-HTTP 是**无状态**协议。每个请求都是独立的，服务器处理完一个请求就"失忆"了。它不会记得：
+HTTP is a **stateless** protocol. Every request stands alone; once the server has handled one request it "forgets" everything. It does not remember:
 
-- 上一次请求是不是你发的
-- 你刚才登录过
-- 你的购物车里有什么
+- whether the previous request was yours
+- that you logged in a moment ago
+- what is in your shopping cart
 
-但网站需要记住这些。于是有了 cookie —— **浏览器帮服务器保管的一小块状态，每次请求自动附上**。
+But websites need to remember these things. Hence the cookie — **a small piece of state the browser holds on the server's behalf and attaches to every request automatically**.
 
-一句话：**cookie 是让无状态的 HTTP 有状态的那根绳子。**
+In one sentence: **a cookie is the string that turns stateless HTTP into something stateful.**
 
-## 二、一次完整的往返
+## 2. One complete round trip
 
 ```
-① 你提交登录表单
+① You submit the login form
    POST /login  body: user=alice&pass=***
 
-② 服务器验证通过，回一个 Set-Cookie
+② The server validates it and sends back a Set-Cookie
    HTTP/1.1 200 OK
    Set-Cookie: sessionid=abc123; Domain=.example.com; Path=/; Max-Age=86400;
                Secure; HttpOnly; SameSite=Lax
 
-③ 浏览器把这条存进 cookie store（domain=.example.com 那格）
+③ The browser stores it in the cookie store (in the domain=.example.com slot)
 
-④ 之后你对 example.com 的每一次请求，浏览器自动加上
+④ From then on, every request you make to example.com gets it attached automatically
    GET /dashboard
    Cookie: sessionid=abc123
 
-⑤ 服务器看到 sessionid=abc123，去 session store 里查出「这是 alice」
-   → 返回 alice 的页面
+⑤ The server sees sessionid=abc123, looks it up in the session store, and finds "this is alice"
+   → returns alice's page
 ```
 
-**关键点**：第 ④ 步是**浏览器自动做的**，不需要 JS 参与。这就是 cookie 和其他存储的根本区别。
+**The key point**: step ④ is **done by the browser automatically**; no JavaScript is involved. That is the fundamental difference between cookies and other kinds of storage.
 
-## 三、Cookie 的七个属性
+## 3. The seven attributes of a cookie
 
-一条 cookie 不只是 name=value，它带着一堆约束：
+A cookie is more than name=value; it carries a pile of constraints:
 
-| 属性 | 作用 | 例子 |
+| Attribute | Effect | Example |
 |---|---|---|
-| **Domain** | 哪些域名可见。`.example.com` 含所有子域；`www.example.com` 只限本身 | `Domain=.example.com` |
-| **Path** | 哪些路径可见。`/api` 只发给 `/api/*` | `Path=/` |
-| **Expires / Max-Age** | 过期时间。不写 = 会话 cookie，关浏览器就删 | `Max-Age=86400` |
-| **Secure** | 只在 HTTPS 上发送 | `Secure` |
-| **HttpOnly** | JS 的 `document.cookie` **看不到**，防 XSS 偷取 | `HttpOnly` |
-| **SameSite** | 跨站请求要不要带。`Strict` / `Lax` / `None` | `SameSite=Lax` |
-| **Partitioned** | CHIPS，按顶层站点分区隔离 | `Partitioned` |
+| **Domain** | Which domains can see it. `.example.com` covers all subdomains; `www.example.com` is limited to itself | `Domain=.example.com` |
+| **Path** | Which paths can see it. `/api` is only sent to `/api/*` | `Path=/` |
+| **Expires / Max-Age** | Expiry time. Omitted = session cookie, deleted when the browser closes | `Max-Age=86400` |
+| **Secure** | Sent over HTTPS only | `Secure` |
+| **HttpOnly** | Invisible to `document.cookie` in JS, prevents XSS theft | `HttpOnly` |
+| **SameSite** | Whether to attach it on cross-site requests. `Strict` / `Lax` / `None` | `SameSite=Lax` |
+| **Partitioned** | CHIPS, isolated per top-level site | `Partitioned` |
 
-还有两个名字前缀是**硬约束**：
+Two name prefixes are also **hard constraints**:
 
-- `__Secure-` 开头 → 必须带 `Secure`
-- `__Host-` 开头 → 必须 `Secure` + `Path=/` + **不能有 Domain**（最严格，防子域投毒）
+- `__Secure-` prefix → must carry `Secure`
+- `__Host-` prefix → must have `Secure` + `Path=/` + **no Domain** (strictest, prevents subdomain poisoning)
 
-## 四、Cookie 到底用来干什么
+## 4. What cookies are actually used for
 
-### 1. 会话管理（最主要的用途，占 90%）
-`sessionid` / `JSESSIONID` / `PHPSESSID` / `connect.sid` —— 一个随机 ID，指向服务器端的 session 记录。**这就是"登录态"的物理形态。**
+### 1. Session management (the dominant use, ~90%)
+`sessionid` / `JSESSIONID` / `PHPSESSID` / `connect.sid` — a random ID pointing at a server-side session record. **This is the physical form of "being logged in".**
 
-### 2. 个性化
-语言偏好、时区、主题（深色/浅色）、每页条数、折叠状态。
+### 2. Personalization
+Language preference, time zone, theme (dark/light), rows per page, collapsed state.
 
-### 3. 跟踪与广告
-第三方 cookie 是广告业的地基：你在 A 站看过某商品，B 站的广告位上就出现它。`_ga`（Google Analytics 的 client id）、`_fbp`（Facebook Pixel）、`IDE`（DoubleClick）。
+### 3. Tracking and advertising
+Third-party cookies are the foundation of the ad industry: you look at a product on site A, and it shows up in an ad slot on site B. `_ga` (Google Analytics client id), `_fbp` (Facebook Pixel), `IDE` (DoubleClick).
 
-> 这也是第三方 cookie 正在被 Chrome/Safari/Firefox 逐步淘汰的原因。
+> This is also why third-party cookies are being phased out by Chrome/Safari/Firefox.
 
-### 4. 同意状态
-GDPR / 隐私合规弹窗的选择：`cookie_consent=analytics:1,ads:0`。你之前问的 Google `COMPASS` 就属于这一类。
+### 4. Consent state
+The choice made in a GDPR / privacy compliance dialog: `cookie_consent=analytics:1,ads:0`. The Google `COMPASS` cookie you asked about earlier belongs to this category.
 
-### 5. A/B 测试与实验分组
-`exp_bucket=37` —— 用 cookie 固定你落在哪个实验组，保证同一用户始终看到同一个版本。
+### 5. A/B testing and experiment bucketing
+`exp_bucket=37` — a cookie pins you to one experiment group so the same user always sees the same version.
 
-### 6. CSRF 防护
-`csrftoken` —— 双提交模式：服务器要求请求体里的 token 和 cookie 里的 token 一致，防止别的站伪造你的请求。
+### 6. CSRF protection
+`csrftoken` — double-submit pattern: the server requires the token in the request body to match the token in the cookie, which stops other sites from forging your requests.
 
-### 7. 购物车（传统站点）
-未登录状态下把购物车存在 cookie 里。
+### 7. Shopping carts (traditional sites)
+Storing the cart in a cookie while the user is not logged in.
 
-### 8. 负载均衡粘性
-`SERVERID=web03` —— 让同一用户的请求都落到同一台后端，避免 session 不同步。
+### 8. Load-balancer stickiness
+`SERVERID=web03` — pins one user's requests to one backend, avoiding session desync.
 
-### 9. 反滥用与风控
-`AEC`、`__Secure-ENID`、`SIDCC` —— 设备指纹、请求频率、cookie 集合一致性校验。
+### 9. Anti-abuse and risk control
+`AEC`, `__Secure-ENID`, `SIDCC` — device fingerprinting, request-rate checks, and consistency validation of the cookie set.
 
-### 10. 归因与分销
-`aff_id=partner42` —— 记录你是从哪个推广链接进来的。
+### 10. Attribution and referral
+`aff_id=partner42` — records which promotional link you arrived from.
 
-## 五、Cookie 和其他存储的区别
+## 5. Cookies vs. other storage
 
-| | 自动随请求发送 | 容量 | 服务端可见 | JS 可读 | 生命周期 |
+| | Sent automatically with requests | Capacity | Visible to the server | Readable by JS | Lifetime |
 |---|---|---|---|---|---|
-| **Cookie** | ✅ 每次自动带 | 4KB/条 | ✅ | 部分（HttpOnly 不可） | 可设过期 |
-| **localStorage** | ❌ 要手动塞进 header | 5–10MB | ❌ | ✅ | 永久 |
-| **sessionStorage** | ❌ | 5–10MB | ❌ | ✅ | 关标签页清空 |
-| **IndexedDB** | ❌ | 数百 MB | ❌ | ✅ | 永久 |
-| **Service Worker cache** | ❌ | 大 | ❌ | ✅ | 永久 |
+| **Cookie** | ✅ attached every time | 4KB each | ✅ | Partial (not when HttpOnly) | Expiry can be set |
+| **localStorage** | ❌ must be put into the header by hand | 5–10MB | ❌ | ✅ | Permanent |
+| **sessionStorage** | ❌ | 5–10MB | ❌ | ✅ | Cleared when the tab closes |
+| **IndexedDB** | ❌ | Hundreds of MB | ❌ | ✅ | Permanent |
+| **Service Worker cache** | ❌ | Large | ❌ | ✅ | Permanent |
 
-**"自动发送"是 cookie 唯一不可替代的能力**，也是它最大的负担——每次请求都带着，浪费带宽，且天然可被 CSRF 利用。
+**"Sent automatically" is the one capability of cookies that cannot be replaced**, and it is also their biggest burden — it rides along on every request, wastes bandwidth, and is inherently exploitable by CSRF.
 
-现代 SPA 常改用 `localStorage` + `Authorization: Bearer`，正是为了躲开这两点。代价是失去了 `HttpOnly` 的保护。
+Modern SPAs often switch to `localStorage` + `Authorization: Bearer` precisely to dodge those two points. The price is losing the protection of `HttpOnly`.
 
-## 六、数量与大小限制
+## 6. Count and size limits
 
-| 限制 | 值 |
+| Limit | Value |
 |---|---|
-| 单条 cookie（name+value+属性） | ~4KB |
-| 单域名 cookie 数 | ~180（Chrome） |
-| 单域名总大小 | ~4KB × 180 |
+| Single cookie (name+value+attributes) | ~4KB |
+| Cookies per domain | ~180 (Chrome) |
+| Total size per domain | ~4KB × 180 |
 
-超了会按 LRU 淘汰旧的。这就是为什么 Google 把多个逻辑 cookie **打包**进一条（`gwus-pd=...:gwus-pd-hl=...`）——`.google.com` 域下的配额早就用满了。
+Going over evicts the oldest by LRU. That is why Google **packs** several logical cookies into one (`gwus-pd=...:gwus-pd-hl=...`) — the quota under `.google.com` has long been exhausted.
 
-## 七、安全问题
+## 7. Security issues
 
-| 攻击 | 原理 | 防御 |
+| Attack | Mechanism | Defense |
 |---|---|---|
-| **XSS 窃取** | 注入 JS 读 `document.cookie` | `HttpOnly` |
-| **CSRF** | 别的站诱导你发请求，浏览器自动带上 cookie | `SameSite` + CSRF token |
-| **会话劫持** | 抓到 cookie 就能冒充你 | `Secure` + `__Host-` + 绑定 IP/指纹 |
-| **Cookie 投毒 / Tossing** | 从子域写一条同名 cookie 覆盖主域的 | `__Host-` 前缀 |
-| **会话固定** | 攻击者先给你一个已知的 sessionid | 登录成功后必须重新签发 |
-| **中间人** | 明文 HTTP 上抓包 | `Secure` + HSTS |
-| **分区绕过** | 第三方上下文读第一方 cookie | `Partitioned`（CHIPS） |
+| **XSS theft** | Inject JS that reads `document.cookie` | `HttpOnly` |
+| **CSRF** | Another site lures you into a request; the browser attaches the cookie automatically | `SameSite` + CSRF token |
+| **Session hijacking** | Capture the cookie and impersonate you | `Secure` + `__Host-` + IP/fingerprint binding |
+| **Cookie poisoning / tossing** | Write a same-named cookie from a subdomain to override the main domain's | `__Host-` prefix |
+| **Session fixation** | The attacker hands you a sessionid they already know | A new one must be issued after login |
+| **Man in the middle** | Sniffing plaintext HTTP | `Secure` + HSTS |
+| **Partition bypass** | Reading first-party cookies from a third-party context | `Partitioned` (CHIPS) |
 
-**核心事实**：cookie 是**持有即证明**的凭证。谁拿到那串值，谁就是那个用户——服务器不做二次验证。这就是为什么"提取登录 cookie"这件事在安全测试里等价于"接管账号"。
+**The core fact**: a cookie is a **possession-is-proof** credential. Whoever holds that string is that user — the server performs no second check. That is why "extracting the login cookie" is equivalent to "taking over the account" in a security test.
 
-## 八、和本工具的关系
+## 8. How this relates to the tool
 
-理解了上面的属性表，前面那些现象就都能解释了：
+Once the attribute table above makes sense, all the earlier oddities explain themselves:
 
-- 为什么扩展能读到 `HttpOnly` 的登录 cookie → 它走浏览器内核层，不是 JS
-- 为什么"只发本页可见"会过滤掉一批 → Domain / Path / Secure / SameSite / Partitioned 五道闸门
-- 为什么跨站 POST 会少几条 → `SameSite=Lax` 只放行 GET/HEAD
-- 为什么排序会变 → RFC 6265 §5.4 规定 path 长的在前
-- 为什么 `COMPASS` 不是登录态 → 它是同意状态，不是会话凭证
+- Why the extension can read `HttpOnly` login cookies → it works at the browser engine layer, not through JS
+- Why "only what this page can see" filters a batch out → five gates: Domain / Path / Secure / SameSite / Partitioned
+- Why a cross-site POST carries fewer cookies → `SameSite=Lax` only lets GET/HEAD through
+- Why the sort order changes → RFC 6265 §5.4 puts longer paths first
+- Why `COMPASS` is not a login state → it is a consent state, not a session credential
 
-**一句话**：cookie 是浏览器替服务器记住你的一张小纸条，每次请求自动递上去。登录靠它，跟踪靠它，风控也靠它。
+**In one sentence**: a cookie is a little note the browser keeps for the server, handed up automatically on every request. Login depends on it, tracking depends on it, and risk control depends on it too.

@@ -1,30 +1,30 @@
-# 主题与字体规范（Claude 视觉系统）
+# Theme & Typography Spec (Claude Visual System)
 
-本扩展的 popup 界面按 **Claude 的视觉语言**重建：奶油底色、黏土橘强调色、Anthropic 自有字体族、极细描边、克制的阴影。本文档记录取色、取字与实现方式，方便后续统一改动。
+The popup UI of this extension is rebuilt around **Claude's visual language**: cream background, clay-orange accent, Anthropic's own type families, hairline strokes, restrained shadows. This document records how the colors and type were sampled and how they are implemented, so later changes stay consistent.
 
-> 参考样本：`~/Downloads/Claude`（Claude Web 的离线存档），字体与色值均从其 `css/*.css` 与 `assets/*.woff2` 中实测提取，不是凭印象调的。
+> Reference sample: `~/Downloads/Claude` (an offline archive of Claude Web). Fonts and color values were measured directly out of its `css/*.css` and `assets/*.woff2`, not tuned by eye.
 
 ---
 
-## 1. 字体
+## 1. Typography
 
-### 1.1 三个字族
+### 1.1 Three families
 
-| 字族 | 文件 | 用途 | 字重 |
+| Family | File | Use | Weight |
 |---|---|---|---|
-| **Anthropic Sans** | `fonts/anthropic-sans.woff2`（+ italic） | 界面正文、按钮、标签、表头 | 变量 **300–800** |
-| **Anthropic Serif** | `fonts/anthropic-serif.woff2` | 品牌标题（`h1`） | 变量 **300–800** |
-| **Anthropic Mono** | `fonts/anthropic-mono.woff2` | cookie 名/值、URL、状态栏、JSON | 400 |
+| **Anthropic Sans** | `fonts/anthropic-sans.woff2` (+ italic) | UI body text, buttons, labels, table headers | Variable **300–800** |
+| **Anthropic Serif** | `fonts/anthropic-serif.woff2` | Brand title (`h1`) | Variable **300–800** |
+| **Anthropic Mono** | `fonts/anthropic-mono.woff2` | cookie names/values, URLs, status bar, JSON | 400 |
 
-三者都是 **variable font**（`wght` 轴 300–800），一个文件覆盖全字重——实测字宽随字重线性变化，说明轴生效：
+All three are **variable fonts** (`wght` axis 300–800); one file covers every weight — measured advance widths change linearly with weight, which proves the axis is live:
 
 ```
-Sans 400 = 505.2px   Sans 600 = 519.6px   Sans 800 = 540.3px   (同字符串 40px 测量)
+Sans 400 = 505.2px   Sans 600 = 519.6px   Sans 800 = 540.3px   (same string measured at 40px)
 ```
 
-### 1.2 回退栈
+### 1.2 Fallback stacks
 
-中文不在 Anthropic 字库内，回退到系统字体。栈按「先拉丁自有字体 → 再系统 UI → 最后 CJK」排列：
+Chinese is not covered by the Anthropic font set, so it falls back to system fonts. The stacks are ordered "Latin brand font first → system UI next → CJK last":
 
 ```css
 --font-ui:    "Anthropic Sans", ui-sans-serif, system-ui, -apple-system,
@@ -38,48 +38,48 @@ Sans 400 = 505.2px   Sans 600 = 519.6px   Sans 800 = 540.3px   (同字符串 40p
               "PingFang SC", monospace;
 ```
 
-### 1.3 用法约定
+### 1.3 Usage conventions
 
-| 元素 | 字族 | 字号 | 说明 |
+| Element | Family | Size | Notes |
 |---|---|---|---|
-| `h1` 品牌名 | Serif | 15px / 600 | 前置 `✳` 星芒，黏土橘 |
-| 按钮 / 标签 / 复选框文字 | Sans | 11px | `font-weight: 500` |
-| 输入框占位符 | Sans | 11.5px | 实际输入内容用 Mono |
-| 表头 `th` | Sans | 9.5px / 600 | 大写 + `.03em` 字距 |
-| cookie 名 / 值 | Mono | 10.5px | `font-variant-numeric: tabular-nums` |
-| domain | Mono | 10px | 弱化色 |
-| flags | Sans | 9.5px | 最弱色，行高 1.45 |
-| 状态栏 / URL | Mono | 10–10.5px | — |
+| `h1` brand name | Serif | 15px / 600 | Preceded by a `✳` star, clay orange |
+| Button / label / checkbox text | Sans | 11px | `font-weight: 500` |
+| Input placeholder | Sans | 11.5px | Actual input text uses Mono |
+| Table header `th` | Sans | 9.5px / 600 | Uppercase + `.03em` tracking |
+| cookie name / value | Mono | 10.5px | `font-variant-numeric: tabular-nums` |
+| domain | Mono | 10px | Muted color |
+| flags | Sans | 9.5px | Faintest color, line-height 1.45 |
+| Status bar / URL | Mono | 10–10.5px | — |
 
-> **为什么 cookie 名/值用等宽**：这些是机器生成的不可读串，等宽字体让 `__Secure-1PSID`、`g.a000xQ9z…` 这类名字对齐、易扫读，也让相似前缀的差异更明显。**为什么品牌名用衬线**：这是 Claude 的识别特征，一眼区分「工具界面」和「随便套的暗色主题」。
+> **Why cookie names/values are monospaced**: these are machine-generated, unreadable strings; a monospace face lines up names like `__Secure-1PSID` and `g.a000xQ9z…` so they scan quickly, and makes the difference between similar prefixes obvious. **Why the brand name is serif**: it is Claude's identifying trait — the one thing that separates "a tool UI" from "a dark theme someone threw on".
 
 ---
 
-## 2. 色板
+## 2. Palette
 
-取自 Claude CSS 的 HSL 三元组，原样换算成 hex。**浅色是 Claude 的招牌奶油底，深色是 Claude 的深灰暖底**——注意不是纯中性灰，都带一点点暖（色相 30–60）。
+Taken from the HSL triples in Claude's CSS and converted to hex as-is. **Light is Claude's signature cream base, dark is Claude's warm dark-grey base** — note that neither is a neutral grey, both carry a little warmth (hue 30–60).
 
-### 2.1 浅色（默认）
+### 2.1 Light (default)
 
-| 令牌 | hex | HSL | 用在哪 |
+| Token | hex | HSL | Where it is used |
 |---|---|---|---|
-| `--bg-page` | `#FAF9F5` | 48 33% 97% | 页面底、表头底 |
-| `--bg-surface` | `#FFFFFF` | 0 0% 100% | 按钮、输入框、激活的 tab |
-| `--bg-sunken` | `#F0EFE9` | 45 12% 93% | 分段控件容器、`pre` 底 |
-| `--bg-inset` | `#F6F5F0` | — | 行 hover |
-| `--fg-strong` | `#121212` | 0 0% 7% | 主文字、cookie 名 |
-| `--fg` | `#373734` | 60 3% 21% | 正文、按钮文字 |
-| `--fg-muted` | `#7B7974` | 43 3% 47% | 次要信息、domain |
-| `--fg-faint` | `#A9A79E` | — | 表头、flags、占位符 |
-| `--line` | `#E2E1DA` | 53 12% 87% | 常规描边 |
-| `--line-strong` | `#D2D1C6` | 55 11% 80% | hover 描边、表头下缘 |
-| `--accent` | `#D97757` | **14.8 63% 60%** | Claude 黏土橘：主按钮、星芒 |
-| `--accent-hover` | `#C4643F` | — | 主按钮 hover |
-| `--value` | `#AD5733` | — | cookie 值专用（加深保对比度） |
+| `--bg-page` | `#FAF9F5` | 48 33% 97% | Page background, table header background |
+| `--bg-surface` | `#FFFFFF` | 0 0% 100% | Buttons, inputs, active tab |
+| `--bg-sunken` | `#F0EFE9` | 45 12% 93% | Segmented control container, `pre` background |
+| `--bg-inset` | `#F6F5F0` | — | Row hover |
+| `--fg-strong` | `#121212` | 0 0% 7% | Primary text, cookie names |
+| `--fg` | `#373734` | 60 3% 21% | Body text, button text |
+| `--fg-muted` | `#7B7974` | 43 3% 47% | Secondary information, domain |
+| `--fg-faint` | `#A9A79E` | — | Table headers, flags, placeholders |
+| `--line` | `#E2E1DA` | 53 12% 87% | Regular strokes |
+| `--line-strong` | `#D2D1C6` | 55 11% 80% | Hover strokes, header bottom edge |
+| `--accent` | `#D97757` | **14.8 63% 60%** | Claude clay orange: primary buttons, star |
+| `--accent-hover` | `#C4643F` | — | Primary button hover |
+| `--value` | `#AD5733` | — | cookie values only (darkened to keep contrast) |
 
-### 2.2 深色
+### 2.2 Dark
 
-| 令牌 | hex | HSL |
+| Token | hex | HSL |
 |---|---|---|
 | `--bg-page` | `#262624` | 60 2.7% 14.5% |
 | `--bg-surface` | `#303030` | 0 0% 19% |
@@ -92,111 +92,111 @@ Sans 400 = 505.2px   Sans 600 = 519.6px   Sans 800 = 540.3px   (同字符串 40p
 | `--line-strong` | `#4C4B47` | — |
 | `--value` | `#E29B7F` | — |
 
-### 2.3 关于 `--value`
+### 2.3 About `--value`
 
-原色 `#D97757` 在奶油底上对比度只有 **≈2.9:1**，做 10.5px 小字不合格。所以单独拆了一个 `--value` 令牌：浅色加深到 `#AD5733`（≈4.7:1），深色提亮到 `#E29B7F`（≈6.5:1）。**强调色和可读文字色分开管**，是这套主题唯一一处偏离原站配色的地方。
+The raw `#D97757` only reaches **≈2.9:1** contrast on the cream background, which fails for 10.5px small text. So `--value` is split out as its own token: darkened to `#AD5733` (≈4.7:1) in light, lightened to `#E29B7F` (≈6.5:1) in dark. **Keeping the accent color and the readable text color separate** is the only place this theme departs from the original site's palette.
 
 ---
 
-## 3. 主题三态
+## 3. Three-state theme
 
 ```
-auto（默认）── 跟随系统 prefers-color-scheme
-  ├─ light  强制浅色（即使系统是深色）
-  └─ dark   强制深色（即使系统是浅色）
+auto (default) ── follows the system prefers-color-scheme
+  ├─ light  force light (even when the system is dark)
+  └─ dark   force dark (even when the system is light)
 ```
 
-实现是三层 CSS + 一个属性：
+The implementation is three CSS layers plus one attribute:
 
 ```css
-:root, :root[data-theme="light"] { /* 浅色令牌 */ }
+:root, :root[data-theme="light"] { /* light tokens */ }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { /* 深色令牌 */ }   /* auto 且系统深色 */
+  :root:not([data-theme="light"]) { /* dark tokens */ }   /* auto and the system is dark */
 }
 
-:root[data-theme="dark"] { /* 深色令牌 */ }            /* 手动锁深色，优先级最高 */
+:root[data-theme="dark"] { /* dark tokens */ }            /* manually locked dark, highest priority */
 ```
 
-- `auto` 时**移除** `data-theme` 属性 → 让媒体查询接管
-- 手动锁定写 `data-theme="light|dark"` → 媒体查询被 `:not([data-theme="light"])` 挡掉
-- 选择存 `chrome.storage.local` 的 `sniffer.theme` 键，下次打开 popup 直接生效
+- In `auto` the `data-theme` attribute is **removed** → the media query takes over
+- A manual lock writes `data-theme="light|dark"` → the media query is blocked by `:not([data-theme="light"])`
+- The choice is stored in `chrome.storage.local` under the `sniffer.theme` key and applies the next time the popup opens
 
-交互入口：顶栏右上角圆形按钮，点击循环 `auto → light → dark → auto`，图标 `◐ / ☀ / ☾`，`title` 同步说明当前状态。
+Interaction entry point: the round button at the top right of the header; clicking cycles `auto → light → dark → auto`, the icon is `◐ / ☀ / ☾`, and `title` states the current mode.
 
-另加 `color-scheme: light dark`（`:root` 与 `<meta name="color-scheme">` 各一处），让原生控件——下拉箭头、复选框、滚动条——自动跟随主题，避免深色底下蹦出白下拉框。
+`color-scheme: light dark` is also declared (once on `:root` and once in `<meta name="color-scheme">`) so native controls — select arrows, checkboxes, scrollbars — follow the theme automatically, and a white dropdown never pops out of a dark surface.
 
 ---
 
-## 4. 布局
+## 4. Layout
 
-固定 **560 × 460**（Chrome popup 上限 800 宽，这里取紧凑尺寸）。
+Fixed at **560 × 460** (Chrome caps popups at 800 wide; this takes the compact size).
 
 ```
-┌──────────────────────────────────────────┐  header    ~48px
+┌──────────────────────────────────────────┐  header     ~48px
 │ ✳ Session Sniffer                    ◐  │
 │ https://accounts.google.com/…            │
-├──────────────────────────────────────────┤  toolbar   ~38px（7 按钮单行）
-├──────────────────────────────────────────┤  ctx 栏    ~38px
-├──────────────────────────────────────────┤  filter 栏 ~38px
-├──────────────────────────────────────────┤  tabs      ~36px（分段控件）
+├──────────────────────────────────────────┤  toolbar    ~38px (7 buttons in one row)
+├──────────────────────────────────────────┤  ctx bar    ~38px
+├──────────────────────────────────────────┤  filter bar ~38px
+├──────────────────────────────────────────┤  tabs       ~36px (segmented control)
 ├──────────────────────────────────────────┤
-│ 表格（可滚，sticky 表头）                  │  main      剩余
+│ Table (scrollable, sticky header)        │  main       rest
 ├──────────────────────────────────────────┤
-│ 状态栏                                    │  footer    ~28px
+│ Status bar                               │  footer     ~28px
 └──────────────────────────────────────────┘
 ```
 
-### 表格列宽
+### Table column widths
 
-`table-layout: fixed`，四列：
+`table-layout: fixed`, four columns:
 
-| 列 | 宽度 | 内容 |
+| Column | Width | Content |
 |---|---|---|
-| name | 106px | cookie 名，Mono |
-| value | auto（≈160px） | cookie 值，Mono + `--value` |
-| domain | 96px | 域；**path 不为 `/` 时跟在后面**（`.google.com /accounts`） |
-| flags | 170px | HttpOnly / Secure / SameSite / Partitioned / 过期 |
+| name | 106px | cookie name, Mono |
+| value | auto (≈160px) | cookie value, Mono + `--value` |
+| domain | 96px | domain; **the path follows it when it is not `/`** (`.google.com /accounts`) |
+| flags | 170px | HttpOnly / Secure / SameSite / Partitioned / expiry |
 
-> **为什么把 path 列砍了**：99% 的 cookie path 是 `/`，独占一列纯属浪费 36px 横向空间——而横向空间正是让 value 和 flags 各占 2 行、每屏多显示一行的关键。非 `/` 的 path 合并进 domain 单元格，信息不丢。
+> **Why the path column was cut**: 99% of cookie paths are `/`, so a dedicated column wastes 36px of horizontal space — and horizontal space is exactly what lets value and flags each take 2 lines and show one more row per screen. Paths that are not `/` are merged into the domain cell, so no information is lost.
 
-### 溢出策略
+### Overflow strategy
 
-- name / value / domain：`word-break: break-all` + `overflow-wrap: anywhere`（不可读串必须硬断）
-- flags：`word-break: normal` + `overflow-wrap: break-word`（要按空格断，否则 `SameSite=None` 会被劈开）
-- 过期时间格式化为 `Exp=MM-DD HH:MM`，比完整 ISO 短 8 字符，正好压进 2 行
+- name / value / domain: `word-break: break-all` + `overflow-wrap: anywhere` (unreadable strings have to break hard)
+- flags: `word-break: normal` + `overflow-wrap: break-word` (must break on spaces, otherwise `SameSite=None` gets split)
+- Expiry is formatted as `Exp=MM-DD HH:MM`, 8 characters shorter than full ISO, which fits exactly into 2 lines
 
 ---
 
-## 5. 交互
+## 5. Interaction
 
-| 状态 | 表现 |
+| State | Behavior |
 |---|---|
-| `:focus-visible` | `border-color: --accent` + `box-shadow: 0 0 0 3px --accent-soft`（3px 光晕，不是 outline） |
-| 按钮 hover | 底色 → `--bg-inset`，描边 → `--line-strong`，文字 → `--fg-strong` |
-| 按钮 active | `translateY(.5px)`，模拟按下 |
-| 表格行 hover | 底色 → `--bg-inset` |
-| 过渡 | `.12s ease`（位移 `.08s`） |
-| `::selection` | `--sel`（黏土橘 22% 透明） |
-| `prefers-reduced-motion` | 全部 transition / animation 关掉 |
+| `:focus-visible` | `border-color: --accent` + `box-shadow: 0 0 0 3px --accent-soft` (a 3px glow, not an outline) |
+| Button hover | Background → `--bg-inset`, stroke → `--line-strong`, text → `--fg-strong` |
+| Button active | `translateY(.5px)`, simulating a press |
+| Table row hover | Background → `--bg-inset` |
+| Transitions | `.12s ease` (`.08s` for movement) |
+| `::selection` | `--sel` (clay orange at 22% opacity) |
+| `prefers-reduced-motion` | All transitions / animations off |
 
-主次按钮：`#copyheader`（复制 Cookie 头）是黏土橘实心主操作；`#scanall` / `#export` 用强描边做次强调；其余为普通描边按钮。**一屏只有一个实心色块**，这是 Claude 的克制感来源。
+Primary and secondary buttons: `#copyheader` (copy Cookie header) is the solid clay-orange primary action; `#scanall` / `#export` use a strong stroke for secondary emphasis; the rest are ordinary stroked buttons. **Only one solid color block per screen** — that is where Claude's restraint comes from.
 
 ---
 
-## 6. 预览与调试
+## 6. Preview and debugging
 
-`preview.html` 是脱离 Chrome 扩展环境的设计稿，塞了假数据，直接用浏览器打开：
+`preview.html` is a design mock that runs outside the Chrome extension environment, seeded with fake data. Open it directly in a browser:
 
 ```
-preview.html                      跟随系统
-preview.html?theme=light          强制浅色
-preview.html?theme=dark           强制深色
-preview.html?tab=local            看 localStorage 面板
-preview.html?tab=raw              看原始 JSON 面板
+preview.html                      follow the system
+preview.html?theme=light          force light
+preview.html?theme=dark           force dark
+preview.html?tab=local            show the localStorage panel
+preview.html?tab=raw              show the raw JSON panel
 ```
 
-截图（用于设计回归对比）：
+Screenshots (for design regression comparison):
 
 ```bash
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
@@ -208,82 +208,82 @@ preview.html?tab=raw              看原始 JSON 面板
 
 ---
 
-## 7. 改主题只改令牌
+## 7. Re-theming touches tokens only
 
-**所有颜色、字体、圆角都走 CSS 变量**，没有一处硬编码色值散落在规则里。要换皮：
+**Every color, font, and radius goes through CSS variables**; no hardcoded color value is scattered through the rules. To reskin:
 
-1. 改 `:root` 里的令牌 → 浅色
-2. 改 `@media (prefers-color-scheme: dark)` 和 `:root[data-theme="dark"]` → 深色（两处必须同步，否则手动锁深色和自动深色会不一致）
-3. 字体换 `--font-ui / --font-serif / --font-mono`，或替换 `fonts/*.woff2` 并改 `@font-face` 的 `src`
+1. Change the tokens in `:root` → light
+2. Change `@media (prefers-color-scheme: dark)` and `:root[data-theme="dark"]` → dark (both must stay in sync, otherwise manually locked dark and automatic dark disagree)
+3. Swap `--font-ui / --font-serif / --font-mono`, or replace `fonts/*.woff2` and update the `src` in `@font-face`
 
-
----
-
-## 8. 字体来源与再分发
-
-`fonts/` 下的四个 `.woff2` 是从 Claude Web 存档中提取的 **Anthropic 自有品牌字体**（Anthropic Sans / Serif / Mono，variable，`wght` 300–800）。本地自用、内部工具、设计对齐没有问题；若要把这个扩展打包分发到商店，字体授权需另行确认——届时把 `@font-face` 指向替代字体（如 Inter / Source Serif / JetBrains Mono）即可，其余令牌不用动。
 
 ---
 
-## 9. 与 Claude 原站的差异
+## 8. Font provenance and redistribution
 
-只取视觉语言，不复制组件：
+The four `.woff2` files under `fonts/` are **Anthropic's own brand fonts** (Anthropic Sans / Serif / Mono, variable, `wght` 300–800) extracted from the Claude Web archive. Local personal use, internal tooling, and design alignment are fine; if this extension is ever packaged and distributed to a store, the font licensing has to be confirmed separately — at that point point `@font-face` at substitute fonts (e.g. Inter / Source Serif / JetBrains Mono) and no other token needs to change.
 
-| 原站 | 本扩展 |
+---
+
+## 9. Differences from the original Claude site
+
+Only the visual language is borrowed, no components are copied:
+
+| Original site | This extension |
 |---|---|
-| 侧边栏 + 会话流 + 输入框 | 单页 popup，固定 560×460 |
-| 大量留白、14px 正文 | 高密度表格、11px 正文、9.5px 表头 |
-| 多层级卡片阴影 | 只有两级阴影（`--shadow-1` / `--shadow-2`） |
-| 黏土橘作为强调/链接色 | 黏土橘只给「复制 Cookie 头」一个按钮 |
-| 完整图标系统 | 只保留星芒标 + `◐/☀/☾` 三个字形 |
+| Sidebar + conversation stream + composer | Single-page popup, fixed 560×460 |
+| Generous whitespace, 14px body text | High-density table, 11px body text, 9.5px headers |
+| Multi-level card shadows | Only two shadow levels (`--shadow-1` / `--shadow-2`) |
+| Clay orange as accent/link color | Clay orange only on the "copy Cookie header" button |
+| Full icon system | Only the star mark + the three glyphs `◐/☀/☾` |
 
 ---
 
-## 10. 图标
+## 10. Icons
 
-黏土橘渐变 squircle 底 + 奶油色放射星芒。星芒即 Claude 的品牌标，同一个形状也用在 popup 顶栏 `h1` 前面（`icons/mark.svg`，黏土橘透明底）。
+A clay-orange gradient squircle base with a cream radiating star. The star is Claude's brand mark; the same shape also precedes the popup header `h1` (`icons/mark.svg`, clay orange on transparent).
 
-![图标预览](icons/preview.png)
+![Icon preview](icons/preview.png)
 
-### 10.1 几何
+### 10.1 Geometry
 
-单一参数表，改一处全家更新：
+A single parameter table — change one value and everything updates:
 
-| 参数 | 完整版（48 / 128） | 简化版（16 / 32） |
+| Parameter | Full version (48 / 128) | Simplified version (16 / 32) |
 |---|---|---|
-| 画布 | 128 | 32 |
-| 圆角半径 | 29（22.7%） | 7.2（22.5%） |
-| 星芒数量 | **8** | **6** |
-| 射线内/外半径 | 19 → 47 | 5.0 → 12.0 |
-| 射线笔画宽 | 11.2 | 3.7 |
-| 中心圆盘半径 | 14 | 3.6 |
-| 起始角度 | −90°（正上方有芒） | −90° |
+| Canvas | 128 | 32 |
+| Corner radius | 29 (22.7%) | 7.2 (22.5%) |
+| Number of rays | **8** | **6** |
+| Ray inner/outer radius | 19 → 47 | 5.0 → 12.0 |
+| Ray stroke width | 11.2 | 3.7 |
+| Center disc radius | 14 | 3.6 |
+| Start angle | −90° (a ray points straight up) | −90° |
 
-**为什么小尺寸要减到 6 芒**：16px 下 8 条射线的间隙只有不到 1 个像素，抗锯齿一糊就变成一坨白点。6 芒 + 更粗笔画（相对画布 11.6% vs 8.75%）才能在 16px 保住「放射」的辨识度。这不是缩放，是重新配平——专业图标集都这么做。
+**Why small sizes drop to 6 rays**: at 16px the gaps between 8 rays are less than one pixel, and anti-aliasing blurs them into a blob of white dots. Only 6 rays with a thicker stroke (11.6% vs 8.75% of the canvas) keeps the "radiating" reading at 16px. This is not a scale-down, it is a re-balance — every professional icon set does the same.
 
-### 10.2 底色
+### 10.2 Background
 
-`linearGradient` 从 `#DE8767`（左上）到 `#BE5E3A`（右下），45° 斜向而非垂直——垂直渐变在小尺寸下会看成上下两块色。另叠一条 `#FFFFFF 18%` 的 1.5px 内描边，模拟图标边缘的一线反光。
+The `linearGradient` runs from `#DE8767` (top left) to `#BE5E3A` (bottom right) at 45° rather than vertically — a vertical gradient reads as two blocks of color at small sizes. A 1.5px inner stroke of `#FFFFFF 18%` is layered on top to simulate the single line of reflected light along the icon edge.
 
-**为什么用黏土橘底而不是奶油底**：浏览器工具栏在浅色主题下是浅灰、深色主题下是深灰。奶油底图标在浅色工具栏里会糊掉，黏土橘在两种背景下都站得住，且品牌识别最强。
+**Why a clay-orange base instead of cream**: the browser toolbar is light grey in the light theme and dark grey in the dark theme. A cream icon dissolves into a light toolbar, whereas clay orange holds up against both backgrounds and carries the strongest brand recognition.
 
-### 10.3 图标生成方式
+### 10.3 How the icons were generated
 
-现有图标由 SVG 经 Chrome 按 8 倍尺寸渲染，再用 Pillow LANCZOS 缩到目标尺寸。目录保留 SVG 源文件、各尺寸 PNG 和预览图；生成脚本已移除。
+The existing icons were rendered from SVG by Chrome at 8× size, then downscaled to the target sizes with Pillow LANCZOS. The directory keeps the SVG source files, the PNGs at each size, and the preview image; the generation script has been removed.
 
-**为什么不直接让 Chrome 渲染 16px**：headless Chrome 有最小窗口尺寸限制，请求 16×16 或 48×48 时实际渲染尺寸更大、截图被裁成左上角一块（第一版就这么翻车的）。所以一律先渲染 8 倍（16→128、128→1024）再缩。
+**Why not have Chrome render 16px directly**: headless Chrome imposes a minimum window size, so requesting 16×16 or 48×48 actually renders larger and the screenshot is cropped to a corner of the top left (the first version failed exactly this way). So everything is rendered at 8× first (16→128, 128→1024) and then downscaled.
 
-### 10.4 文件
+### 10.4 Files
 
-| 文件 | 尺寸 | 用在哪 |
+| File | Size | Used for |
 |---|---|---|
-| `icons/icon.svg` | 矢量，128 画布 | 源文件（8 芒完整版） |
-| `icons/icon-small.svg` | 矢量，32 画布 | 源文件（6 芒简化版） |
-| `icons/mark.svg` | 矢量，透明底 | popup 顶栏 `h1` 前的星芒 |
-| `icons/icon16.png` | 16×16 | 工具栏、扩展管理页小图标 |
-| `icons/icon32.png` | 32×32 | Windows 高分屏工具栏 |
-| `icons/icon48.png` | 48×48 | 扩展管理页 |
-| `icons/icon128.png` | 128×128 | 商店列表、安装对话框 |
-| `icons/preview.png` | — | 本文档的尺寸对照图 |
+| `icons/icon.svg` | Vector, 128 canvas | Source file (full 8-ray version) |
+| `icons/icon-small.svg` | Vector, 32 canvas | Source file (simplified 6-ray version) |
+| `icons/mark.svg` | Vector, transparent background | The star before the popup header `h1` |
+| `icons/icon16.png` | 16×16 | Toolbar, small icon on the extensions page |
+| `icons/icon32.png` | 32×32 | Toolbar on Windows high-DPI displays |
+| `icons/icon48.png` | 48×48 | Extensions page |
+| `icons/icon128.png` | 128×128 | Store listing, install dialog |
+| `icons/preview.png` | — | The size comparison image in this document |
 
-四张 PNG 已在 `manifest.json` 的 `icons` 与 `action.default_icon` 两处注册：`icons` 决定扩展管理页与商店展示，`default_icon` 决定工具栏按钮——漏掉后者工具栏会显示灰块。
+The four PNGs are registered in two places in `manifest.json`: `icons` and `action.default_icon`. `icons` decides what the extensions page and store listing show, `default_icon` decides the toolbar button — miss the latter and the toolbar shows a grey block.
