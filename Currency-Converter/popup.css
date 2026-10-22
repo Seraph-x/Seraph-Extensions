@@ -1,9 +1,9 @@
 /*!
- * popup.css —— 扩展弹窗样式
- * 视觉参考 claude.ai settings（/Users/zhuzhishang/Downloads/Claude）：
- *   · 字体：Anthropic Sans / Serif / Mono（本地嵌入，可变字重 300–800）
- *   · 配色：米白底 hsl(48 33.3% 97.1%) / 陶土色主色 hsl(18 50.4% 47.5%)
- *   · 结构：卡片 + 1px 描边 + 12px 圆角，随之附带 prefers-color-scheme 深色方案
+ * popup.css — extension popup styles
+ * Visual reference: claude.ai settings (Claude web archive):
+ *   · Type: Anthropic Sans / Serif / Mono (embedded locally, variable weight 300–800)
+ *   · Palette: off-white ground hsl(48 33.3% 97.1%) / terracotta accent hsl(18 50.4% 47.5%)
+ *   · Structure: card + 1px stroke + 12px radius, with a matching prefers-color-scheme dark variant
  */
 @font-face{font-family:'Anthropic Sans';src:url('fonts/anthropic-sans.woff2') format('woff2');font-weight:300 800;font-style:normal;font-display:swap}
 @font-face{font-family:'Anthropic Serif';src:url('fonts/anthropic-serif.woff2') format('woff2');font-weight:300 800;font-style:normal;font-display:swap}
