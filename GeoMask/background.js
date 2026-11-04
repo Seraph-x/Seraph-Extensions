@@ -346,7 +346,9 @@ async function resolveHostProfile(host, force) {
     const cached = map[key];
     if (!s.enabled && !force) return cached || null;
     const ttl = Math.max(1, Number(s.hostTtlMinutes) || 30) * 60000;
-    if (!force && cached && Date.now() - (cached.updatedAt || 0) < ttl) return cached;
+    // Keep failed-probe records for configuration and diagnostics, not TTL hits.
+    const reusable = cached && cached.source !== 'global' && !cached.probe?.stale;
+    if (!force && reusable && Date.now() - (cached.updatedAt || 0) < ttl) return cached;
 
     let profile = null;
     const probe={attemptedAt:Date.now(),observedAt:null,observedIp:null,endpoint:null,format:null,errors:[],fallbackReason:null};

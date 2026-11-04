@@ -89,6 +89,8 @@ The three tabs keep their own scroll positions while the popup stays open. After
 
 On navigation, the extension tries to read the egress IP of the probe request from `https://{host}/cdn-cgi/trace` on the target site, then queries a geographic database for the time zone, country, and approximate coordinates; language is derived from the country.
 
+Successful site results are cached for 30 minutes by default. Global fallback results and historical records retained after a failed probe, including records saved by earlier versions, no longer prevent the next navigation or probe request from trying again. Concurrent probes for the same site still share one request. Failure diagnostics remain available; no additional automatic retry loop is started.
+
 2.6.0 offers two choices under "Global settings → Global location and priority", with lowest as the default:
 
 | Choice | Priority (high to low) |
